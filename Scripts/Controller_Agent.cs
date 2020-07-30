@@ -579,6 +579,9 @@ public class Controller_Agent : Agent
                         AddReward(1f/MaxStep); // Incentives for moving closer to the target
                     }
                 }
+                
+                // AddReward(meterToTarget/(MaxStep*distanceToTarget));
+
                 break;
             case Academy_Agent.tasks.PickUp:
                 if (actionTake == true)
