@@ -104,8 +104,7 @@ public class AgentController : Agent
     bool done = false; // if the episode is completed or not
     int successEpisode = 0; // successful episode count
     float success_rates = 0; // overall success rates;
-    string success_rates_log = ""; // write success rate each episode to a logger
-    string agent_setup_log = ""; // get agent setup parameters
+    float success_rates_sms = 0; // overall SMS success rates
 
     // System random generator
     System.Random rnd;
@@ -194,15 +193,6 @@ public class AgentController : Agent
         // Set agent velocity and angular velocity as 0
         rBody.velocity = Vector3.zero;
         rBody.angularVelocity = Vector3.zero;
-        
-        // Set the next task ang taget by academy
-        academyAgent.settingTaskTarget();
-
-        if (academyAgent.shuffleReplay) {academyAgent.testIdx = Random.Range(0,100);}
-
-        targetSelected = academyAgent.targetSelected;
-        taskSelected = academyAgent.taskSelected;
-        targetChildNum = academyAgent.targetChildNum;
 
         if(CompletedEpisodes>0)
         {
@@ -222,23 +212,28 @@ public class AgentController : Agent
                 string savePath = Directory.GetCurrentDirectory() + "/Assets/Log/2Dpath/" + now.ToString("MM-dd-yyyy_HH-mm-ss") + $"{targetSelected}{targetChildNum}_episdoe-{CompletedEpisodes}.png";
                 PathDraw2D.SavePath2PNG(GameObject.Find("FloorPlanCamera").GetComponent<Camera>(), savePath);
             }
+
+            if(logSuccessRate)
+            {
+                if(StepCount<MaxStep)
+                {
+                    success_rates += 1.0f;
+                    success_rates_sms += SuccessRateSMS(StepCount, target);
+                }
+                LogSuccessRate(success_rates/CompletedEpisodes, success_rates_sms/CompletedEpisodes);
+            }
         }
+
+        // Set the next task ang taget by academy
+        academyAgent.settingTaskTarget();
+
+        if (academyAgent.shuffleReplay) {academyAgent.testIdx = Random.Range(0,100);}
+
+        targetSelected = academyAgent.targetSelected;
+        taskSelected = academyAgent.taskSelected;
+        targetChildNum = academyAgent.targetChildNum;
         target = targetParent.Find(targetSelected.ToString()).GetChild(targetChildNum);
         target.gameObject.SetActive(true);
-
-        if (StepCount==MaxStep)
-        {
-            // Calculate success rate
-            if (logSuccessRate)
-            {   
-                int minStepRequired =  (int)(180f/turnAmount) + (int)(Mathf.Abs(Distance2D(startingPosition, target.position) - navigationThreshold)/forwardAmount);
-                float sr = minStepRequired / Mathf.Max(minStepRequired, StepCount);
-
-                success_rates += sr;
-                success_rates_log += (success_rates/CompletedEpisodes).ToString() + ",";
-            }
-            successEpisode++;
-        }
 
         // Reset Agent in a random position
         if (randomPosition)
@@ -526,7 +521,7 @@ public class AgentController : Agent
     }
 
     // check the obstacles in front of the agent before it hits them
-    bool CheckObstacle()
+    private bool CheckObstacle()
     {
         CapsuleCollider collider = GetComponent<CapsuleCollider>(); 
         Vector3 pt1 = transform.TransformPoint(collider.center);
@@ -539,7 +534,7 @@ public class AgentController : Agent
     }
 
     // Randomly choose agent positions based on the room width and length
-    void ChooseAgentPosition(float width, float length, out Vector3 pos, out float rot)
+    private void ChooseAgentPosition(float width, float length, out Vector3 pos, out float rot)
     {
         bool posChoosing = true;
         float xPos = 0f;
@@ -557,7 +552,7 @@ public class AgentController : Agent
     }
 
     // Check if the position on the floor is a legitimate position, return true if the position is properly chosen
-    bool CheckPosition(Vector3 positionOnFloor)
+    private bool CheckPosition(Vector3 positionOnFloor)
     {
         CapsuleCollider collider = GetComponent<CapsuleCollider>(); 
         Vector3 pt1 = positionOnFloor + new Vector3(0,collider.radius,0); // The center of the sphere at the start of the capsule
@@ -586,6 +581,31 @@ public class AgentController : Agent
             }
             return false;
         }
+    }
+
+    // Calcuate minimum number of rotations agent needs to make to reach the object
+    private int MinRotMovements(Transform target)
+    {
+        // Vector joining agent and target
+        Vector3 jointVec = new Vector3(target.position.x-transform.position.x, 0, target.position.z-transform.position.z);
+        // Minimun angle agent needs to make
+        float angle = Vector3.Angle(transform.forward, jointVec);
+        return Mathf.CeilToInt(angle/turnAmount);
+    }
+
+    // Calculate success rate weighted by minimum steps (SMS)
+    private float SuccessRateSMS(int totSteps, Transform target)
+    {
+        // Minimum number of steps agent needs to take
+        int minSteps = MinRotMovements(target) + Mathf.CeilToInt(Distance2D(transform.position, target.position)/forwardAmount);
+        return minSteps/Mathf.Max(minSteps, totSteps);
+    }
+
+    private void LogSuccessRate(float sr, float sms)
+    {
+        var statsRecorder = Academy.Instance.StatsRecorder;
+        statsRecorder.Add("Average Success Rate", sr);
+        statsRecorder.Add("Average SMS", sms);
     }
 
     ///=========================================================================
