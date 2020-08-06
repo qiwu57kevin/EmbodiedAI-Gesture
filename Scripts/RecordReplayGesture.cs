@@ -8,7 +8,7 @@ using System.IO; // needed for reading and writing .csv
 using System.Text; // for csv 
 
 [RequireComponent(typeof(Animator))]
-public class RecordGesture: MonoBehaviour
+public class RecordReplayGesture: MonoBehaviour
 {
     HumanPose currentPose = new HumanPose(); // keeps track of currentPose while animated
     HumanPose poseToSet; // reassemble poses from .csv data
@@ -44,7 +44,7 @@ public class RecordGesture: MonoBehaviour
     bool recordPoses = false;
     bool reapplyPoses = false; // the recorded animation
 
-    Academy_Agent academyAgent;
+    EnvSetup academyAgent;
 
     // Uniy screen UI info
     Text recInfo;
@@ -72,7 +72,7 @@ public class RecordGesture: MonoBehaviour
         animator = GetComponent<Animator>();
         poseHandler = new HumanPoseHandler(animator.avatar, transform);
 
-        academyAgent = GameObject.Find("AgentAcademy").GetComponent<Academy_Agent>();
+        academyAgent = GameObject.Find("EnvSetup").GetComponent<EnvSetup>();
         isTraining = academyAgent.TrainingCheck();
 
         // Initiate dropdown options
@@ -94,7 +94,7 @@ public class RecordGesture: MonoBehaviour
 
             targetDropdown.ClearOptions();
             targetNumDropdown.ClearOptions();
-            targetDropdown.AddOptions(Enum.GetNames(typeof(Academy_Agent.targets)).ToList());
+            targetDropdown.AddOptions(Enum.GetNames(typeof(EnvSetup.targets)).ToList());
             targetNumDropdown.AddOptions(Enumerable.Range(0,10).Select(num => num.ToString()).ToList());
         }
     }

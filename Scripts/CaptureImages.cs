@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class CaptureImages : MonoBehaviour
 {
-    public Academy_Agent.targets[] capturedTargets;
+    public EnvSetup.targets[] capturedTargets;
     private Transform _target;
 
     public GameObject targetCamera;
@@ -13,7 +13,7 @@ public class CaptureImages : MonoBehaviour
 
     public void GenerateTargetImages()
     {
-        foreach(Academy_Agent.targets target in capturedTargets)
+        foreach(EnvSetup.targets target in capturedTargets)
         {
             _target = GameObject.Find($"Targets/{target.ToString()}").transform;
             foreach(Transform child in _target)

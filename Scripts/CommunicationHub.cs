@@ -5,91 +5,89 @@ using UnityEngine;
 using System.Collections.Generic;
 using Random = UnityEngine.Random;
 
-public class DataIO: MonoBehaviour
+// A class used to communicate between agent and recordings
+public class CommunicationHub: MonoBehaviour
 {
-    string dataAbsolutePath;
+    // Path to read recordings.
+    public string recordingSavePath = "Recordings/Archived/";
+    private string recordingAbsPath;
 
     // Agent and academy
-    Academy_Agent academyAgent;
-    Controller_Agent agent;
-    GameObject agentObj;
+    public EnvSetup envSetup;
+    public GameObject agentObj;
+    private AgentController agent;
     bool isTraining;
 
     // Devie,and target setup
-    string[] _DeviceList;
-    string[] _TargetList;
-    Academy_Agent.targets target;
-    int targetChildNum;
+    private string[] _DeviceList;
+    private string[] _TargetList;
+    private EnvSetup.targets target;
+    private int targetChildNum;
 
     // Kinect avatar model
-    GameObject kinectAvatar;  
-    RecordGesture animationRecorder;
+    public GameObject kinectAvatar;  
+    RecordReplayGesture animationRecorder;
 
     // Create dictionary to store all files
     Dictionary<Tuple<string, string, int>, List<string>> recording;
+    // If Kinect or Leap data has been loaded for current episode
     bool kinectLoadData = false;
-    bool leapLoadData;
-
-    string customLogger = ""; //Retrieve training data from agent
+    bool leapLoadData = false;
 
     void Awake()
     {
-        academyAgent = GameObject.Find("AgentAcademy").GetComponent<Academy_Agent>();
-        if (academyAgent!=null)
+        if (envSetup!=null)
         {
-            isTraining = academyAgent.isTraining;
+            isTraining = envSetup.isTraining;
         }
         else
         {
-            Debug.LogError("DataIO: Can't find AgentAcademy");
+            Debug.LogError("Can't find EnvSetup");
             return;
         }
 
         _DeviceList = new string[]{"Kinect", "Leap"};
-        _TargetList = Enum.GetNames(typeof(Academy_Agent.targets)).ToArray();
+        _TargetList = Enum.GetNames(typeof(EnvSetup.targets)).ToArray();
         InitializeRecording();
 
         // Get recording and logger path
-        dataAbsolutePath = Directory.GetCurrentDirectory() + "/Assets/Recordings/Archived/";
+        recordingAbsPath = Directory.GetCurrentDirectory() + "/Assets/" + recordingSavePath;
 
         // Load all files in the recording archive
-        LoadFileNames(dataAbsolutePath);
+        LoadFileNames(recordingAbsPath);
     }
 
     void Start()
     {       
-        // load setup
-
-        agentObj = GameObject.Find("RobotAgent");
+        // Load setup
         if (agentObj==null)
         {
-            Debug.LogError("DataIO: Can't find RobotAgent");
+            Debug.LogError("Can't find RobotAgent");
             return;
         }
         else
         {
-            agent = agentObj.GetComponent<Controller_Agent>();
+            agent = agentObj.GetComponent<AgentController>();
         }
 
-        kinectAvatar = GameObject.Find("KinectAvatar");
         if (kinectAvatar==null)
         {
-            Debug.LogError("DataIO: Can't find KinectAvatar");
+            Debug.LogError("Can't find KinectAvatar");
         }
         else
         {
-            animationRecorder = kinectAvatar.GetComponent<RecordGesture>();
+            animationRecorder = kinectAvatar.GetComponent<RecordReplayGesture>();
         }
 
         // Set application target framerate
         Application.targetFrameRate = 60;
     }
 
-    // look up agentAcademy for Test index and Target
+    // look up EnvSetup for Test index and Target
     public bool RigOverwriter(string Rig)
     {
-        target = academyAgent.targetSelected;
-        targetChildNum = academyAgent.targetChildNum;
+        target = envSetup.targetSelected;
+        targetChildNum = envSetup.targetChildNum;
 
         // Check if the device is corrent
         if (!string.Equals(Rig, "Kinect") && !string.Equals(Rig, "Leap"))

@@ -2,7 +2,7 @@
 using UnityEngine;
 using Random = UnityEngine.Random;
 
-public class Academy_Agent : MonoBehaviour
+public class EnvSetup : MonoBehaviour
 {
     // Enumerators for all targets and tasks
     public enum targets
@@ -19,31 +19,23 @@ public class Academy_Agent : MonoBehaviour
     private static readonly targets[] targetBring = {targets.Cup, targets.Laptop, targets.Book, targets.Monitor, targets.Cellphone, targets.Printer, targets.Chair, targets.Pen};
     private static readonly targets[] targetTurnOnOff = {targets.Switch, targets.Monitor};
     
+    [Tooltip("Select if the agent is in training. Deselect for inference or heuristic mode.")]
     public bool isTraining;
-    [Header("Task/Target Setting")]
+    [Header("Task/Target Setup")]
     public targets targetSelected;
+    [Range(0,10)]
     public int targetChildNum = 1; // which child of the target is selected; initialized to be 1 (the first child)
     public tasks taskSelected;
-    [Tooltip("Auto set task and target")]
+    [Tooltip("Auto set task and target. Deselect to fix task and target choice.")]
     public bool autoSet = false;
 
-    [HideInInspector]
-    public tasks initTask;
-    [HideInInspector]
-    public targets initTarget;
-
-    [Header("Training/Inference Setting")]
+    [Header("Training/Inference Setup")]
     // academy parameters
-    public bool randomSeed;
-    public bool recordedReplay;
+    [Tooltip("If shuffle replay list and select from it.")]
+    public bool shuffleReplay;
+    [Tooltip("Select to enable replaying from recordings.")]
+    public bool replayInInference;
     public int testIdx;
-
-    void Start ()
-    {
-        initTask = taskSelected;
-        initTarget = targetSelected;
-        settingTaskTarget();
-    }
 
     public bool TrainingCheck()
     {
@@ -53,7 +45,7 @@ public class Academy_Agent : MonoBehaviour
     public void settingTaskTarget()
     {   
         // Auto set task and target
-        if (autoSet)
+        if(autoSet)
         {
             // taskSelected = (tasks)Random.Range(0, numTasks);
             taskSelected = tasks.GoTo; // only Goto for simplicity of training
@@ -75,34 +67,34 @@ public class Academy_Agent : MonoBehaviour
                     targetSelected = targetTurnOnOff[Random.Range(0,targetTurnOnOff.Length)];
                     break;
             }
-        }
 
-        switch(targetSelected)
-        {
-            case targets.Laptop:
-            case targets.Book:
-            case targets.Monitor:
-            case targets.Cellphone:
-            case targets.Clock:
-            case targets.Printer:
-            case targets.Pen:
-                targetChildNum = 0;
-                break;
-            case targets.Cup:
-                targetChildNum = Random.Range(0,5);
-                break;
-            case targets.Switch:
-                targetChildNum = Random.Range(0,2);
-                break;
-            case targets.Chair:
-                targetChildNum = Random.Range(0,8);
-                break;
-            case targets.Rack:
-                targetChildNum = Random.Range(0,6);
-                break;
-            case targets.Sofa:
-                targetChildNum = Random.Range(0,6);
-                break;
+            switch(targetSelected)
+            {
+                case targets.Laptop:
+                case targets.Book:
+                case targets.Monitor:
+                case targets.Cellphone:
+                case targets.Clock:
+                case targets.Printer:
+                case targets.Pen:
+                    targetChildNum = 0;
+                    break;
+                case targets.Cup:
+                    targetChildNum = Random.Range(0,5);
+                    break;
+                case targets.Switch:
+                    targetChildNum = Random.Range(0,2);
+                    break;
+                case targets.Chair:
+                    targetChildNum = Random.Range(0,8);
+                    break;
+                case targets.Rack:
+                    targetChildNum = Random.Range(0,6);
+                    break;
+                case targets.Sofa:
+                    targetChildNum = Random.Range(0,6);
+                    break;
+            }
         }
                 
         if (taskSelected == tasks.PickUp && targetSelected != targets.Cup && targetSelected != targets.Book && targetSelected != targets.Laptop)
