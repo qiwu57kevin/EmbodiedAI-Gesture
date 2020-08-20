@@ -55,6 +55,7 @@ public class EnvSetup : MonoBehaviour
                     // targetSelected = (targets)Random.Range(0,numTargets);
                     targets[] currentTargetList = {targets.Cup, targets.Chair, targets.Rack, targets.Sofa};
                     targetSelected = currentTargetList[Random.Range(0,4)];
+                    // targetSelected = targets.Cup;
                     break;
                 case tasks.PickUp:
                     targetSelected = targetPickUp[Random.Range(0,targetPickUp.Length)];

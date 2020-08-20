@@ -17,12 +17,8 @@ public class RecordReplayGesture: MonoBehaviour
 
     [Tooltip("Maximum number frames it can record.")]
     public int maxFrame = 10000; // max number of frames until unity stops recording automatically
-    [Tooltip("Whether to loop the replayed animation.")]
+    [Tooltip("Whether to loop the replayed animation. When set to true, the saved animation will be replayed repeatedly.")]
     public bool isLoop = true; // whether to the loop the replayed animation
-    [Tooltip("Save poses and target location for training purpose.")]
-    public bool logPoses = false;
-    [Tooltip("Activate self recording by mouse click")]
-    public bool selfRecording = false;
     float[] currentMuscles; // an array containig current muscle values
     float[,] animationHumanPoses; // stack all currentHumanPose in one array
     int AnimationNumber = 0; // count animation file number
@@ -99,21 +95,6 @@ public class RecordReplayGesture: MonoBehaviour
         }
     }
 
-    void Update()
-    {
-        if(selfRecording&&!isTraining)
-        {
-            if(Input.GetKeyDown(KeyCode.Space))
-            {
-                StartEndRecording();
-            }
-            if(Input.GetKeyDown(KeyCode.Return))
-            {
-                SaveAnimation();
-            }
-        }
-    }
-
     // Update is called once per frame
     // even running this in LateUpdate does not capture IK
     void LateUpdate()
@@ -151,40 +132,13 @@ public class RecordReplayGesture: MonoBehaviour
             recSave.interactable = false;
             StartCoroutine(RecInfoCoroutine());
         }
-
-        // Save target position and poses as a dictionary
-        if(logPoses)
-        {            
-            Transform target = GameObject.Find($"Targets/{targetDropdown.captionText.text}").transform.GetChild(targetNumDropdown.value);
-            Vector3 position = target.position; //target global position
-
-            string _path = Directory.GetCurrentDirectory();
-            _path = _path + "/Assets/Recordings/pose_prediction_train/" + String.Join("_", new string[]{KinectLeap.isOn? "Kinect":"Leap", recorderName.text, targetDropdown.captionText.text, 
-                targetNumDropdown.value.ToString(), LeftRight.isOn? "left":"right", now.ToString("MM-dd-yyyy_HH-mm-ss"), "posepredic"}) + ".csv";
-            TextWriter _sw = new StreamWriter(_path);
-            string _line;
-
-            for (int frame = 0; frame < counterRec; frame++) // run through all frames 
-            {
-                _line = "";
-                _line = _line + position.x + ";";
-                _line = _line + position.y + ";";
-                _line = _line + position.z + ";";
-                for (int i = 0; i < muscleCount+7; i++) // and all values composing one Pose
-                {
-                    _line = _line + animationHumanPoses[frame, i].ToString() + ";";
-                }
-                _sw.WriteLine(_line);
-            }
-            _sw.Close();      
-        }
     }
 
     // Refill animationHumanPoses with values from loaded csv files
     public void LoadAnimation(string loadedFile)
     {
         string path = Directory.GetCurrentDirectory();
-        path = path + "/Assets/Recordings/Archived/" + (loadedFile.EndsWith(".csv")? loadedFile:(loadedFile+".csv"));
+        path = path + "/Assets/Recordings/" + (loadedFile.EndsWith(".csv")? loadedFile:(loadedFile+".csv"));
 
         if (File.Exists(path))
         {
@@ -222,7 +176,7 @@ public class RecordReplayGesture: MonoBehaviour
     public void LoadAnimationFromTextField()
     {
         string path = Directory.GetCurrentDirectory();
-        path = path + "/Assets/Recordings/Archived/" + (replayFile.text.EndsWith(".csv")? replayFile.text:(replayFile.text+".csv"));
+        path = path + "/Assets/Recordings/" + (replayFile.text.EndsWith(".csv")? replayFile.text:(replayFile.text+".csv"));
 
         if (File.Exists(path))
         {

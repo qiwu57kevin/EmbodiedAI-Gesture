@@ -38,11 +38,12 @@ public class AgentController : Agent
     {
         audio, gesture, both, none
     }
-    [Header("Modality Setting")]
+    [Header("Sensor Setting")]
     public Source source = Source.both;
+    public bool useGPS = false;
 
-    [Header("Logger Setting")]
-    public bool logSuccessRate = false;
+    [Header("Log Setting")]
+    public bool logCustomMetrics = false;
     public bool drawAgentPath = false;
     public bool saveAgentPath = false;
 
@@ -101,13 +102,18 @@ public class AgentController : Agent
     int forwardActions = 0;
 
     // Agent performance measurement
-    bool done = false; // if the episode is completed or not
-    int successEpisode = 0; // successful episode count
-    float success_rates = 0; // overall success rates;
-    float success_rates_sms = 0; // overall SMS success rates
+    int STEP_COUNT = 0;
+    bool EPISODE_DONE = false; // if the episode is completed or not
+    bool EPISODE_SUCCESS = false; // if the episode is a success or not
+    float tot_sr = 0; // total success rates in one episode
+    float tot_sr_sms = 0; // total success rates(sms) in one episode
+    StatsRecorder statsRecorder;
 
     // System random generator
     System.Random rnd;
+
+    // Environment State
+    Bounds roomBounds;
 
     #endregion
 
@@ -174,6 +180,12 @@ public class AgentController : Agent
 
         // System random initializer
         rnd = new System.Random();
+
+        // StatsRecorder which logs custom metrics into tensorboard
+        statsRecorder = Academy.Instance.StatsRecorder;
+
+        // Get current Room bounds
+        roomBounds = GetRoomBounds();
     }
 
     public void Update()
@@ -197,6 +209,10 @@ public class AgentController : Agent
         if(CompletedEpisodes>0)
         {
             target.gameObject.SetActive(false);
+            // foreach(Transform child in targetParent.Find(targetSelected.ToString()))
+            // {
+            //     child.gameObject.SetActive(false);
+            // }
 
             if(source==Source.gesture||source==Source.both)
             {
@@ -213,14 +229,20 @@ public class AgentController : Agent
                 PathDraw2D.SavePath2PNG(GameObject.Find("FloorPlanCamera").GetComponent<Camera>(), savePath);
             }
 
-            if(logSuccessRate)
+            if(logCustomMetrics)
             {
-                if(StepCount<MaxStep)
+                if(EPISODE_SUCCESS)
                 {
-                    success_rates += 1.0f;
-                    success_rates_sms += SuccessRateSMS(StepCount, target);
+                    tot_sr += 1.0f;
+                    tot_sr_sms += SuccessRateSMS(STEP_COUNT, target, startingPosition);
+                    LogSuccessRate(1f, SuccessRateSMS(STEP_COUNT, target, startingPosition), tot_sr/CompletedEpisodes, tot_sr_sms/CompletedEpisodes);
                 }
-                LogSuccessRate(success_rates/CompletedEpisodes, success_rates_sms/CompletedEpisodes);
+                else
+                {
+                    LogSuccessRate(0f, 0f, tot_sr, tot_sr_sms);
+                }
+
+                LogDTS(target);
             }
         }
 
@@ -233,12 +255,18 @@ public class AgentController : Agent
         taskSelected = academyAgent.taskSelected;
         targetChildNum = academyAgent.targetChildNum;
         target = targetParent.Find(targetSelected.ToString()).GetChild(targetChildNum);
+        // Activate only selected target
         target.gameObject.SetActive(true);
+        // // Activate all targets with the same catergory
+        // foreach(Transform child in targetParent.Find(targetSelected.ToString()))
+        // {
+        //     child.gameObject.SetActive(true);
+        // }
 
         // Reset Agent in a random position
         if (randomPosition)
         {
-            ChooseAgentPosition(5f, 8f, out Vector3 pos, out float rot);
+            ChooseAgentPosition(30f, 30f, out Vector3 pos, out float rot);
             transform.position = pos;
             transform.rotation = Quaternion.Euler(0f, rot, 0f);
         }
@@ -252,16 +280,23 @@ public class AgentController : Agent
         startingPosition = transform.position;
         startingRotation = transform.rotation;
 
-        // reset rotation and forward movement counter
+        // Reset rotation and forward movement counter
         rotateActions = 0;
         forwardActions = 0;
 
-        // reset actions
+        // Reset actions
         actionGoTo = false;
         actionTake = false;
         actionDrop = false;
         actionTurnOn = false;
         actionTurnOff = false;
+
+        // Reset performance measurements
+        STEP_COUNT = 0;
+        EPISODE_DONE = false;
+        EPISODE_SUCCESS = false;
+        tot_sr = 0;
+        tot_sr_sms = 0;
 
         //Reset agent trail renderer
         PathDraw2D.ResetPathDraw();
@@ -269,7 +304,7 @@ public class AgentController : Agent
 
     public override void CollectObservations(VectorSensor sensor)
     {
-        if(GetComponent<CameraSensorComponent>()!=null) // use agent poses from Unity if no camera/rendertexture repsent
+        if(useGPS) // use agent poses from Unity if no camera/rendertexture repsent
         {
             // Agent position. Assume no vertical movement.
             sensor.AddObservation(transform.localPosition.x);
@@ -371,18 +406,20 @@ public class AgentController : Agent
         }
 
         // Get current distance to the target
-        distanceToTarget = Distance2D(transform.position, target.position);
+        distanceToTarget = DistanceToTarget(transform, target);
 
-        done = CalculateRewards(taskSelected);
+        EPISODE_DONE = CalculateRewards(taskSelected);
 
-        if(done)
+        if(EPISODE_DONE)
         {
-            AddReward(-0.005f * (rotateActions - 180/turnAmount)); // excessive rotation penalty
+            if(rotateActions>180f/turnAmount) {AddReward(-0.005f * (rotateActions - 180/turnAmount));} // excessive rotation penalty
             EndEpisode();
         }
+
+        STEP_COUNT++;
     }
 
-    // // Mask stop action during training to ensure more stable training
+    // Mask stop action during training to ensure more stable training
     // public override void CollectDiscreteActionMasks(DiscreteActionMasker actionMasker)
     // {
     //     if(isTraining)
@@ -416,16 +453,41 @@ public class AgentController : Agent
     }
 
     #region Customized Functions
-    /// <summary>
-    /// The Euclidean distance of two object in x-z plane.
-    ///</summary>
-    float Distance2D(Vector3 a, Vector3 b)
+    
+    // Get the room bounds
+    private Bounds GetRoomBounds()
+    {
+        Bounds roomBounds = new Bounds(new Vector3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity),
+			new Vector3(-float.PositiveInfinity, -float.PositiveInfinity, -float.PositiveInfinity)
+		);
+		foreach (Renderer r in GameObject.FindObjectsOfType<Renderer>()) {
+			if (r.enabled) {
+				roomBounds.Encapsulate(r.bounds);
+			}
+		}
+        return roomBounds;
+    }
+
+    // The Euclidean distance of two object in x-z plane.
+    private float Distance2D(Vector3 a, Vector3 b)
     {
         return Mathf.Sqrt( Mathf.Pow(a.x-b.x,2)+Mathf.Pow(a.z-b.z,2) );
     }
 
+    // Calculate the distance to the object
+    private float DistanceToTarget(Transform currentObj, Transform target)
+    {
+        float dist = 1000.0f;
+        foreach (Collider col in target.GetComponentsInChildren<Collider>())
+        {
+            Vector3 closestPoint = col.ClosestPointOnBounds(transform.position);
+            dist = Math.Min(Distance2D(currentObj.position, closestPoint), dist);
+        }
+        return dist;
+    }
+
     // Calculate Rewards based on task, and task stage
-    bool CalculateRewards(EnvSetup.tasks task)
+    private bool CalculateRewards(EnvSetup.tasks task)
     {
         bool done = false;
 
@@ -453,6 +515,7 @@ public class AgentController : Agent
                     {
                         SetReward(1f);
                         done = true;
+                        EPISODE_SUCCESS = true;
                     }
                     else if(requireStop? actionGoTo:false)
                     {
@@ -558,7 +621,7 @@ public class AgentController : Agent
         Vector3 pt1 = positionOnFloor + new Vector3(0,collider.radius,0); // The center of the sphere at the start of the capsule
         Vector3 pt2 = positionOnFloor + new Vector3(0,collider.radius,0) + new Vector3(0,collider.height,0); // The center of the sphere at the end of the capsule
         Collider[] colliders = Physics.OverlapCapsule(pt1, pt2, collider.radius);
-        return colliders.Length == 0 && (Distance2D(positionOnFloor, target.position) >= (navigationThreshold+1));
+        return roomBounds.Contains(positionOnFloor) && colliders.Length == 0 && (Distance2D(positionOnFloor, target.position) >= (2*navigationThreshold));
     }
     
     // Check if an Renderer is rendered by a specific camera
@@ -584,28 +647,37 @@ public class AgentController : Agent
     }
 
     // Calcuate minimum number of rotations agent needs to make to reach the object
-    private int MinRotMovements(Transform target)
+    private int MinRotMovements(Transform target, Vector3 startPos)
     {
         // Vector joining agent and target
-        Vector3 jointVec = new Vector3(target.position.x-transform.position.x, 0, target.position.z-transform.position.z);
+        Vector3 jointVec = new Vector3(target.position.x-startPos.x, 0, target.position.z-startPos.z);
         // Minimun angle agent needs to make
         float angle = Vector3.Angle(transform.forward, jointVec);
         return Mathf.CeilToInt(angle/turnAmount);
     }
 
     // Calculate success rate weighted by minimum steps (SMS)
-    private float SuccessRateSMS(int totSteps, Transform target)
+    private float SuccessRateSMS(int totSteps, Transform target, Vector3 startPos)
     {
         // Minimum number of steps agent needs to take
-        int minSteps = MinRotMovements(target) + Mathf.CeilToInt(Distance2D(transform.position, target.position)/forwardAmount);
-        return minSteps/Mathf.Max(minSteps, totSteps);
+        int minSteps = MinRotMovements(target, startPos) + Mathf.CeilToInt((Distance2D(startPos, target.position)-navigationThreshold)/forwardAmount);
+        return (float)minSteps/Mathf.Max(minSteps, totSteps);
     }
 
-    private void LogSuccessRate(float sr, float sms)
+    private void LogSuccessRate(float sr, float sms, float avg_sr, float avg_sms)
     {
-        var statsRecorder = Academy.Instance.StatsRecorder;
-        statsRecorder.Add("Average Success Rate", sr);
-        statsRecorder.Add("Average SMS", sms);
+        statsRecorder.Add("Metrics/Success Rate", sr);
+        statsRecorder.Add("Metrics/Success Rate Weighted by Min Steps", sms);
+        statsRecorder.Add("Metrics/Average Success Rate", avg_sr, StatAggregationMethod.MostRecent);
+        statsRecorder.Add("Metrics/Average Success Rate Weighted by Min Steps", avg_sms, StatAggregationMethod.MostRecent);
+    }
+
+    // Calculate distance to success (Chaplot et al., 2020) (DTS), which is the distance of the agent from the success threshold boundary when the episode ends
+    // and log DTS to Tensorboard
+    private void LogDTS(Transform target)
+    {
+        float dts = Mathf.Max(0f, Distance2D(transform.position, target.position) - navigationThreshold);
+        statsRecorder.Add("Metrics/Distance to Success", dts);
     }
 
     ///=========================================================================

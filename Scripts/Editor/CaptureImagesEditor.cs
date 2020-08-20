@@ -15,5 +15,10 @@ public class CaptureImagesEditor: Editor
         {
             myScript.GenerateTargetImages();
         }
+
+        if(GUILayout.Button("Capture Environment Images"))
+        {
+            myScript.GenerateEnvImages();
+        }
     }
 }
