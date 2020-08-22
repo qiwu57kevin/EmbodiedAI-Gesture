@@ -7,21 +7,29 @@ using System.Collections.Generic;
 using System.IO; // needed for reading and writing .csv
 using System.Text; // for csv 
 
-[RequireComponent(typeof(Animator))]
+
 public class RecordReplayGesture: MonoBehaviour
 {
-    HumanPose currentPose = new HumanPose(); // keeps track of currentPose while animated
-    HumanPose poseToSet; // reassemble poses from .csv data
-    Animator animator;
-    HumanPoseHandler poseHandler; // to record and retarget animation
+    [Header("Kinect Setting")]
+    [Tooltip("Animator from Kinect Avatar")]
+    public Transform kinectAvatar;
 
+    [Header("Leap Setting")]
+    public Transform leftLeapHand;
+    public Transform rightLeapHand;
+
+    [Header("Global Setting")]
     [Tooltip("Maximum number frames it can record.")]
     public int maxFrame = 10000; // max number of frames until unity stops recording automatically
     [Tooltip("Whether to loop the replayed animation. When set to true, the saved animation will be replayed repeatedly.")]
-    public bool isLoop = true; // whether to the loop the replayed animation
-    float[] currentMuscles; // an array containig current muscle values
-    float[,] animationHumanPoses; // stack all currentHumanPose in one array
-    int AnimationNumber = 0; // count animation file number
+    public bool loopReplay = true; // whether to the loop the replayed animation
+
+    HumanPose currentPose = new HumanPose(); // keeps track of currentPose while animated
+    HumanPose poseToSet; // reassemble poses from .csv data
+    HumanPoseHandler poseHandler; // to record and retarget animation
+
+    float[] currentMuscles; // an array containig current Kinect avatar muscle values
+    float[,] animationHumanPoses; // stack all poses in one array
     int counterRec = 0; // count number of frames
     [HideInInspector]
     public int counterPlay = 0; // count animation playback frames
@@ -36,7 +44,10 @@ public class RecordReplayGesture: MonoBehaviour
     Quaternion poseRotationAtStart;
 
     // Used to set poses
-    int muscleCount; // count the number of muscles of the avatar
+    int muscleCount; // count the number of muscles of the Kinect avatar
+    int leapCount; // count number of data tracked by Leap hands
+    Transform[] leftHandTransforms; // note down all left hand transforms tracked by Leap
+    Transform[] rightHandTransforms; // note down all right hand transforms tracked by Leap
     bool recordPoses = false;
     bool reapplyPoses = false; // the recorded animation
 
@@ -53,7 +64,6 @@ public class RecordReplayGesture: MonoBehaviour
     Button replayLoad;
     Dropdown targetDropdown;
     Dropdown targetNumDropdown;
-    Toggle KinectLeap;
     Toggle LeftRight;
     Toggle TrainTest;
 
@@ -61,12 +71,16 @@ public class RecordReplayGesture: MonoBehaviour
 
     void Start()
     {
-        muscleCount = HumanTrait.MuscleCount; // count the number of muscles of the avatar
-        animationHumanPoses = new float[maxFrame, muscleCount+7];
+        muscleCount = HumanTrait.MuscleCount;
         currentMuscles = new float[muscleCount];
 
-        animator = GetComponent<Animator>();
-        poseHandler = new HumanPoseHandler(animator.avatar, transform);
+        leftHandTransforms = leftLeapHand.GetComponentsInChildren<Transform>(true);
+        rightHandTransforms = rightLeapHand.GetComponentsInChildren<Transform>(true);
+        leapCount = 7*(leftHandTransforms.Length+rightHandTransforms.Length);
+
+        animationHumanPoses = new float[maxFrame, muscleCount+7 + leapCount];
+
+        poseHandler = new HumanPoseHandler(kinectAvatar.GetComponent<Animator>().avatar, kinectAvatar);
 
         academyAgent = GameObject.Find("EnvSetup").GetComponent<EnvSetup>();
         isTraining = academyAgent.TrainingCheck();
@@ -84,7 +98,6 @@ public class RecordReplayGesture: MonoBehaviour
             replayLoad = GameObject.Find("replayLoad").GetComponent<Button>();
             targetDropdown = GameObject.Find("target").GetComponent<Dropdown>();
             targetNumDropdown = GameObject.Find("targetNum").GetComponent<Dropdown>();
-            KinectLeap = GameObject.Find("kinect").GetComponent<Toggle>();
             LeftRight = GameObject.Find("handGroup/left").GetComponent<Toggle>();
             TrainTest = GameObject.Find("train").GetComponent<Toggle>();
 
@@ -110,7 +123,7 @@ public class RecordReplayGesture: MonoBehaviour
         DateTime now = DateTime.Now;
 
         string path = Directory.GetCurrentDirectory();
-        path = path + "/Assets/Recordings/" + String.Join("_",new string[]{KinectLeap.isOn? "Kinect":"Leap", recorderName.text, targetDropdown.captionText.text, 
+        path = path + "/Assets/Recordings/" + String.Join("_",new string[]{recorderName.text, targetDropdown.captionText.text, 
             targetNumDropdown.value.ToString(), LeftRight.isOn? "left":"right", now.ToString("MM-dd-yyyy_HH-mm-ss"), TrainTest.isOn? "train":"test"}) + ".csv";
         TextWriter sw = new StreamWriter(path);
         string line;
@@ -118,7 +131,7 @@ public class RecordReplayGesture: MonoBehaviour
         for (int frame = 0; frame < counterRec; frame++) // run through all frames 
         {
             line = "";
-            for (int i = 0; i < muscleCount+7; i++) // and all values composing one Pose
+            for (int i = 0; i < muscleCount+7+leapCount; i++) // and all values composing one Pose
             {
                 line = line + animationHumanPoses[frame, i].ToString() + ";";
             }
@@ -154,9 +167,9 @@ public class RecordReplayGesture: MonoBehaviour
             while (!sr.EndOfStream)
             {
                 line = sr.ReadLine().Split(';');
-                for (int muscleNum = 0; muscleNum < line.Length - 1; muscleNum++)
+                for (int num = 0; num < line.Length - 1; num++)
                 {
-                    animationHumanPoses[frame, muscleNum] = float.Parse(line[muscleNum]);
+                    animationHumanPoses[frame, num] = float.Parse(line[num]);
                 }
                 frame++;
             }
@@ -192,9 +205,9 @@ public class RecordReplayGesture: MonoBehaviour
             while (!sr.EndOfStream)
             {
                 line = sr.ReadLine().Split(';');
-                for (int muscleNum = 0; muscleNum < line.Length - 1; muscleNum++)
+                for (int num = 0; num < line.Length - 1; num++)
                 {
-                    animationHumanPoses[frame, muscleNum] = float.Parse(line[muscleNum]);
+                    animationHumanPoses[frame, num] = float.Parse(line[num]);
                 }
                 frame++;
             }
@@ -267,15 +280,15 @@ public class RecordReplayGesture: MonoBehaviour
         }
     }
 
-    // Record posed up to maximum frames
+    // Record poses up to maximum frames
     public void RecordPoses()
     {
         poseHandler.GetHumanPose(ref currentPose);
 
         if (counterRec == 0)
         {
-            positionAtStart = transform.position;
-            rotationAtStart = transform.rotation;
+            positionAtStart = kinectAvatar.position;
+            rotationAtStart = kinectAvatar.rotation;
             posePositionAtStart = currentPose.bodyPosition;
             poseRotationAtStart = currentPose.bodyRotation;
 
@@ -300,11 +313,34 @@ public class RecordReplayGesture: MonoBehaviour
             animationHumanPoses[counterRec, 4] = currentRotation.y;
             animationHumanPoses[counterRec, 5] = currentRotation.z;
             animationHumanPoses[counterRec, 6] = currentRotation.w;
-            for (int i = 7; i < muscleCount + 7; i++) 
+
+            // Record Kinect avatar muscle values
+            for (int i = 0; i < muscleCount; i++) 
             {
-                animationHumanPoses[counterRec, i] = currentPose.muscles[i-7];
+                animationHumanPoses[counterRec, i+7] = currentPose.muscles[i];
             }
-            
+
+            // Record position and rotation of Leap hand transforms
+            for(int j = 0; j <leftHandTransforms.Length; j++)
+            {
+                animationHumanPoses[counterRec, muscleCount+7+j*7+0] = leftHandTransforms[j].position.x;
+                animationHumanPoses[counterRec, muscleCount+7+j*7+1] = leftHandTransforms[j].position.y;
+                animationHumanPoses[counterRec, muscleCount+7+j*7+2] = leftHandTransforms[j].position.z;
+                animationHumanPoses[counterRec, muscleCount+7+j*7+3] = leftHandTransforms[j].rotation.x;
+                animationHumanPoses[counterRec, muscleCount+7+j*7+4] = leftHandTransforms[j].rotation.y;
+                animationHumanPoses[counterRec, muscleCount+7+j*7+5] = leftHandTransforms[j].rotation.z;
+                animationHumanPoses[counterRec, muscleCount+7+j*7+6] = leftHandTransforms[j].rotation.w;          
+            } 
+            for(int k = 0; k <rightHandTransforms.Length; k++)
+            {
+                animationHumanPoses[counterRec, muscleCount+7+leftHandTransforms.Length*7+k*7+0] = rightHandTransforms[k].position.x;
+                animationHumanPoses[counterRec, muscleCount+7+leftHandTransforms.Length*7+k*7+1] = rightHandTransforms[k].position.y;
+                animationHumanPoses[counterRec, muscleCount+7+leftHandTransforms.Length*7+k*7+2] = rightHandTransforms[k].position.z;
+                animationHumanPoses[counterRec, muscleCount+7+leftHandTransforms.Length*7+k*7+3] = rightHandTransforms[k].rotation.x;
+                animationHumanPoses[counterRec, muscleCount+7+leftHandTransforms.Length*7+k*7+4] = rightHandTransforms[k].rotation.y;
+                animationHumanPoses[counterRec, muscleCount+7+leftHandTransforms.Length*7+k*7+5] = rightHandTransforms[k].rotation.z;
+                animationHumanPoses[counterRec, muscleCount+7+leftHandTransforms.Length*7+k*7+6] = rightHandTransforms[k].rotation.w;          
+            }           
             counterRec++;
         }
     }
@@ -318,24 +354,42 @@ public class RecordReplayGesture: MonoBehaviour
 
         if (currentFrame == 0)
         {
-            transform.position = new Vector3(animationHumanPoses[currentFrame, 0],animationHumanPoses[currentFrame, 1],animationHumanPoses[currentFrame, 2]);;
+            // Set Kinect avatar body location and rotation at start
+            kinectAvatar.position = new Vector3(animationHumanPoses[currentFrame, 0],animationHumanPoses[currentFrame, 1],animationHumanPoses[currentFrame, 2]);
             // transform.rotation = new Quaternion(animationHumanPoses[currentFrame, 3],animationHumanPoses[currentFrame, 4],animationHumanPoses[currentFrame, 5],animationHumanPoses[currentFrame, 6]);
-            transform.rotation = Quaternion.identity;
+            kinectAvatar.rotation = Quaternion.identity;
 
             counterPlay++;
         }
-        else if (!isLoop && counterPlay >= counterLoad)
+        else if (!loopReplay && counterPlay >= counterLoad)
         {
             transform.position = positionAtStart;
             transform.rotation = rotationAtStart;
         }
         else
         {
+            // Set Kinect avatar poses
             poseToSet.bodyPosition = new Vector3(animationHumanPoses[currentFrame, 0],animationHumanPoses[currentFrame, 1],animationHumanPoses[currentFrame, 2]);
             poseToSet.bodyRotation = new Quaternion(animationHumanPoses[currentFrame, 3],animationHumanPoses[currentFrame, 4],animationHumanPoses[currentFrame, 5],animationHumanPoses[currentFrame, 6]);
             for (int i = 0; i < muscleCount; i++) { currentMuscles[i] = animationHumanPoses[currentFrame, i+7]; } // somehow cannot directly modify muscle values
             poseToSet.muscles = currentMuscles;
             poseHandler.SetHumanPose(ref poseToSet);
+
+            // Set Leap hands
+            for(int j = 0; j <leftHandTransforms.Length; j++)
+            {
+                leftHandTransforms[j].position = new Vector3(animationHumanPoses[currentFrame, muscleCount+7+j*7+0],
+                                                animationHumanPoses[currentFrame, muscleCount+7+j*7+1],animationHumanPoses[currentFrame, muscleCount+7+j*7+2]);
+                leftHandTransforms[j].rotation = new Quaternion(animationHumanPoses[currentFrame, muscleCount+7+j*7+3],animationHumanPoses[currentFrame, muscleCount+7+j*7+4],
+                                                animationHumanPoses[currentFrame, muscleCount+7+j*7+5],animationHumanPoses[currentFrame, muscleCount+7+j*7+6]);    
+            } 
+            for(int k = 0; k <rightHandTransforms.Length; k++)
+            {
+                leftHandTransforms[k].position = new Vector3(animationHumanPoses[currentFrame, muscleCount+7+leftHandTransforms.Length*7+k*7+0],
+                                                animationHumanPoses[currentFrame, muscleCount+7+leftHandTransforms.Length*7+k*7+1],animationHumanPoses[currentFrame, muscleCount+7+leftHandTransforms.Length*7+k*7+2]);
+                leftHandTransforms[k].rotation = new Quaternion(animationHumanPoses[currentFrame, muscleCount+7+leftHandTransforms.Length*7+k*7+3],animationHumanPoses[currentFrame, muscleCount+7+leftHandTransforms.Length*7+k*7+4],
+                                                animationHumanPoses[currentFrame, muscleCount+7+leftHandTransforms.Length*7+k*7+5],animationHumanPoses[currentFrame, muscleCount+7+leftHandTransforms.Length*7+k*7+6]);       
+            }           
 
             counterPlay++;
         }       

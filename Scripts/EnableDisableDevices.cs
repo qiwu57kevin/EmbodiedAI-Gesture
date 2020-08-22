@@ -11,25 +11,26 @@ public class EnableDisableDevices : MonoBehaviour
     public bool enableKinect = false;
     public bool enableLeap = false;
 
+
     void Awake()
     {
         if(!enableKinect)
         {
-        	kinectManager.gameObject.SetActive(false);
+        	kinectManager.enabled = false;
         }
         else
         {
-            kinectManager.gameObject.SetActive(true);
+            kinectManager.enabled = true;
         }
         KinectManager.Instance.refreshAvatarControllers();
 
         if(!enableLeap)
         {
-            leapServiceProvider.gameObject.SetActive(false);
+            leapServiceProvider.enabled = false;
         }
         else
         {
-            leapServiceProvider.gameObject.SetActive(true);
+            leapServiceProvider.enabled = true;
         }
     }
 }

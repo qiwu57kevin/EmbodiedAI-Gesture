@@ -112,14 +112,11 @@ public class AgentController : Agent
     // System random generator
     System.Random rnd;
 
-    // Environment State
-    Bounds roomBounds;
-
     #endregion
 
     void Start()
     {
-        rBody = GetComponent<Rigidbody>();
+        rBody = GetComponentInChildren<Rigidbody>();
         startingPosition = this.transform.position;
         startingRotation = this.transform.rotation;
 
@@ -161,7 +158,7 @@ public class AgentController : Agent
         }
         else
         {
-            kinect_Animatior = kinectAvatar.GetComponent<Animator>();
+            kinect_Animatior = kinectAvatar.GetComponentInChildren<Animator>();
             kinectPoseHandler = new HumanPoseHandler(kinect_Animatior.avatar, kinectAvatar);
             kinectPose = new HumanPose();
         }
@@ -183,9 +180,6 @@ public class AgentController : Agent
 
         // StatsRecorder which logs custom metrics into tensorboard
         statsRecorder = Academy.Instance.StatsRecorder;
-
-        // Get current Room bounds
-        roomBounds = GetRoomBounds();
     }
 
     public void Update()
@@ -266,9 +260,9 @@ public class AgentController : Agent
         // Reset Agent in a random position
         if (randomPosition)
         {
-            ChooseAgentPosition(30f, 30f, out Vector3 pos, out float rot);
-            transform.position = pos;
-            transform.rotation = Quaternion.Euler(0f, rot, 0f);
+            ChooseAgentPosition(8f, 5f, out Vector3 pos, out float rot);
+            transform.localPosition = pos;
+            transform.localRotation = Quaternion.Euler(0f, rot, 0f);
         }
         else
         {
@@ -419,18 +413,6 @@ public class AgentController : Agent
         STEP_COUNT++;
     }
 
-    // Mask stop action during training to ensure more stable training
-    // public override void CollectDiscreteActionMasks(DiscreteActionMasker actionMasker)
-    // {
-    //     if(isTraining)
-    //     {
-    //         if(distanceToTarget>=navigationThreshold)
-    //         {
-    //             actionMasker.SetMask(0, new int[1]{4});
-    //         }
-    //     }
-    // }
-
     public override void Heuristic(float[] actionsOut)
     {
         actionsOut[0] = 0;
@@ -453,20 +435,6 @@ public class AgentController : Agent
     }
 
     #region Customized Functions
-    
-    // Get the room bounds
-    private Bounds GetRoomBounds()
-    {
-        Bounds roomBounds = new Bounds(new Vector3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity),
-			new Vector3(-float.PositiveInfinity, -float.PositiveInfinity, -float.PositiveInfinity)
-		);
-		foreach (Renderer r in GameObject.FindObjectsOfType<Renderer>()) {
-			if (r.enabled) {
-				roomBounds.Encapsulate(r.bounds);
-			}
-		}
-        return roomBounds;
-    }
 
     // The Euclidean distance of two object in x-z plane.
     private float Distance2D(Vector3 a, Vector3 b)
@@ -597,31 +565,41 @@ public class AgentController : Agent
     }
 
     // Randomly choose agent positions based on the room width and length
-    private void ChooseAgentPosition(float width, float length, out Vector3 pos, out float rot)
+    private void ChooseAgentPosition(float length, float width, out Vector3 pos, out float rot)
     {
-        bool posChoosing = true;
+        bool posChoosing = false;
         float xPos = 0f;
         float zPos = 0f;
         float yAngle = 0f;
-        while (posChoosing)
+        // Attempt for 1000 times
+        for(int i=0; i<1000; i++)
         {
             xPos = UnityEngine.Random.Range(-length/2, length/2);
             zPos = UnityEngine.Random.Range(-width/2, width/2);
-            yAngle = UnityEngine.Random.Range(0f, 360f);
-            posChoosing = !CheckPosition(new Vector3(xPos, 0f, zPos));
+            yAngle = UnityEngine.Random.Range(0f, 360f); 
+            posChoosing = CheckPosition(new Vector3(xPos, 0.1f, zPos)); // small offset in y
+            if(posChoosing) {break;}
         }
-        pos = new Vector3(xPos,0f,zPos);
-        rot = yAngle;
+        if(posChoosing)
+        {
+            pos = new Vector3(xPos,0.1f,zPos);
+            rot = yAngle;
+        }
+        else
+        {
+            pos = Vector3.zero;
+            rot = 0f;
+        }
     }
 
     // Check if the position on the floor is a legitimate position, return true if the position is properly chosen
     private bool CheckPosition(Vector3 positionOnFloor)
     {
-        CapsuleCollider collider = GetComponent<CapsuleCollider>(); 
+        CapsuleCollider collider = GetComponentInChildren<CapsuleCollider>(); 
         Vector3 pt1 = positionOnFloor + new Vector3(0,collider.radius,0); // The center of the sphere at the start of the capsule
-        Vector3 pt2 = positionOnFloor + new Vector3(0,collider.radius,0) + new Vector3(0,collider.height,0); // The center of the sphere at the end of the capsule
+        Vector3 pt2 = positionOnFloor - new Vector3(0,collider.radius,0) + new Vector3(0,collider.height,0); // The center of the sphere at the end of the capsule
         Collider[] colliders = Physics.OverlapCapsule(pt1, pt2, collider.radius);
-        return roomBounds.Contains(positionOnFloor) && colliders.Length == 0 && (Distance2D(positionOnFloor, target.position) >= (2*navigationThreshold));
+        return colliders.Length == 0 && (Distance2D(positionOnFloor, target.position) >= (2*navigationThreshold));
     }
     
     // Check if an Renderer is rendered by a specific camera
