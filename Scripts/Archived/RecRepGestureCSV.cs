@@ -8,8 +8,9 @@ using System.IO; // needed for reading and writing .csv
 using System.Text; // for csv 
 
 
-public class RecordReplayGesture: MonoBehaviour
+public class RecRepGestureCSV: MonoBehaviour
 {
+    // Record and replay gestures in the form of .anim files
     [Header("Kinect Setting")]
     [Tooltip("Animator from Kinect Avatar")]
     public Transform kinectAvatar;

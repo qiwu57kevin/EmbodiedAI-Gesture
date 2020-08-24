@@ -4,34 +4,18 @@ using UnityEngine;
 
 public class TrackHeadPosition : MonoBehaviour
 {
-    KinectManager manager;
-    Vector3 headPosition;
+    // Transform of player head
+    public Transform headTransform;
 
-    [Header("OVRCamera Setting")]
-    public float xOffset = 0f;
-    public float yOffset = 0f;
-    public float zOffset = 0f;
+    // [Header("OVRCamera Setting")]
+    // public float xOffset = 0f;
+    // public float yOffset = 0f;
+    // public float zOffset = 0f;
 
-	void Start()
-	{
-		// Get Kinect Manager instance
-        manager = KinectManager.Instance;
-	}
-
-    void FixedUpdate()
+    void LateUpdate()
     {
-        if(manager && manager.IsInitialized())
-        {
-            if(manager.IsUserDetected())
-            {
-                long userId = manager.GetPrimaryUserID();
-
-                if(manager.IsJointTracked(userId, (int)KinectInterop.JointType.Head))
-                {
-                    headPosition = manager.GetJointPosition(userId, (int)KinectInterop.JointType.Head);
-                    transform.position = new Vector3(headPosition.x + xOffset, headPosition.y + yOffset, headPosition.z + zOffset); // adjust camera's position with the offsets
-                }
-            }
-        }
+       // Let the OVR camera follow Kinect avatar head movement
+    //    this.transform.position = headTransform.position;
+        GameObject.Find("CenterEyeAnchor").transform.position = headTransform.position;
     }
 }

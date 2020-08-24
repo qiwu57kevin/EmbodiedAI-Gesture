@@ -26,7 +26,7 @@ public class CommunicationHub: MonoBehaviour
 
     // Kinect avatar model
     public GameObject kinectAvatar;  
-    RecordReplayGesture animationRecorder;
+    RecRepGestureCSV animationRecorder;
 
     // Create dictionary to store all files
     Dictionary<Tuple<string, string, int>, List<string>> recording;
@@ -76,7 +76,7 @@ public class CommunicationHub: MonoBehaviour
         }
         else
         {
-            animationRecorder = kinectAvatar.GetComponent<RecordReplayGesture>();
+            animationRecorder = kinectAvatar.GetComponent<RecRepGestureCSV>();
         }
 
         // Set application target framerate
