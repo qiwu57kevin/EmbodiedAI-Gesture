@@ -13,19 +13,15 @@ public class RecRepGestureANIM : MonoBehaviour
 
     // Uniy screen UI info
     Text recInfo;
-    Text replayInfo;
-    InputField replayFile;
     InputField recorderName;
     Button recStartEnd;
     Button recSave;
-    Button replayStartEnd;
-    Button replayLoad;
     Dropdown targetDropdown;
     Dropdown targetNumDropdown;
     Toggle LeftRight;
     Toggle TrainTest;
 
-    // Recoder of Leap and Kinect gameobjects
+    // Recorder of Leap and Kinect gameobjects
     GameObjectRecorder kinectRecorder;
     GameObjectRecorder leapLeftRecorder;
     GameObjectRecorder leapRightRecorder;
@@ -53,10 +49,6 @@ public class RecRepGestureANIM : MonoBehaviour
         academyAgent = GameObject.Find("EnvSetup").GetComponent<EnvSetup>();
         isTraining = academyAgent.TrainingCheck();
 
-        kinectClip = new AnimationClip();
-        leapLeftClip = new AnimationClip();
-        leapRightClip = new AnimationClip();
-
         kinectRecorder = new GameObjectRecorder(kinectAvatar);
         leapLeftRecorder = new GameObjectRecorder(leapHandLeft);
         leapRightRecorder = new GameObjectRecorder(leapHandRight);
@@ -65,24 +57,18 @@ public class RecRepGestureANIM : MonoBehaviour
         if(!isTraining)
         {
             recInfo = GameObject.Find("recInfo").GetComponent<Text>();
-            replayInfo = GameObject.Find("replayInfo").GetComponent<Text>();
-            replayFile = GameObject.Find("replayFile").GetComponent<InputField>();
             recorderName = GameObject.Find("recorder").GetComponent<InputField>();
             recStartEnd = GameObject.Find("recStartEnd").GetComponent<Button>();
             recSave = GameObject.Find("recSave").GetComponent<Button>();
-            replayStartEnd = GameObject.Find("replayStartEnd").GetComponent<Button>();
-            replayLoad = GameObject.Find("replayLoad").GetComponent<Button>();
             targetDropdown = GameObject.Find("target").GetComponent<Dropdown>();
             targetNumDropdown = GameObject.Find("targetNum").GetComponent<Dropdown>();
             LeftRight = GameObject.Find("handGroup/left").GetComponent<Toggle>();
             TrainTest = GameObject.Find("train").GetComponent<Toggle>();
 
-            targetDropdown.ClearOptions();
+            // targetDropdown.ClearOptions();
             targetNumDropdown.ClearOptions();
-            targetDropdown.AddOptions(Enum.GetNames(typeof(EnvSetup.targets)).ToList());
+            // targetDropdown.AddOptions(Enum.GetNames(typeof(EnvSetup.targets)).ToList());
             targetNumDropdown.AddOptions(Enumerable.Range(0,10).Select(num => num.ToString()).ToList());
-
-            ResetRecorder();
         }
     }
 
@@ -107,24 +93,15 @@ public class RecRepGestureANIM : MonoBehaviour
                 recInfo.text = "Record Ended!";
                 recStartEnd.GetComponentInChildren<Text>().text = "Start Recording";
                 StartCoroutine(RecInfoCoroutine());
-
-                ResetRecorder();
             }
             else
             {
+                ResetRecorder();
                 recSave.interactable = false;
-                replayStartEnd.interactable = false;
                 recInfo.text = "Recording!";
                 recStartEnd.GetComponentInChildren<Text>().text = "End Recording";
             }
         }
-    }
-
-    public void TakeRecordings()
-    {
-        kinectRecorder.TakeSnapshot(Time.deltaTime);
-        leapLeftRecorder.TakeSnapshot(Time.deltaTime);
-        leapRightRecorder.TakeSnapshot(Time.deltaTime);
     }
 
     public void SaveRecordings()
@@ -139,14 +116,21 @@ public class RecRepGestureANIM : MonoBehaviour
         SaveClipToPath(leapRightClip, "Assets/Recordings/Leap/Right/", "LeapRight", recorder, target, targetNum, handedness, forTraining);
     }
 
-    public void SaveRecordingsToClip()
+    private void TakeRecordings()
+    {
+        kinectRecorder.TakeSnapshot(Time.deltaTime);
+        leapLeftRecorder.TakeSnapshot(Time.deltaTime);
+        leapRightRecorder.TakeSnapshot(Time.deltaTime);
+    }
+
+    private void SaveRecordingsToClip()
     {
         kinectRecorder.SaveToClip(kinectClip);
         leapLeftRecorder.SaveToClip(leapLeftClip);
         leapRightRecorder.SaveToClip(leapRightClip);
     }
 
-    public void SaveClipToPath(AnimationClip clip, string path, string device, string recorder, string target, int targetNum, bool handedness, bool forTraining)
+    private void SaveClipToPath(AnimationClip clip, string path, string device, string recorder, string target, int targetNum, bool handedness, bool forTraining)
     {
         DateTime now = DateTime.Now;
         Directory.CreateDirectory(Directory.GetCurrentDirectory()+"/"+path+recorder);
@@ -155,8 +139,24 @@ public class RecRepGestureANIM : MonoBehaviour
         AssetDatabase.CreateAsset(clip, filePath);
     }
 
-    public void ResetRecorder()
+    private void ResetRecorder()
     {
+        kinectClip = new AnimationClip();
+        leapLeftClip = new AnimationClip();
+        leapRightClip = new AnimationClip();
+
+        AnimationClipSettings settings = AnimationUtility.GetAnimationClipSettings(kinectClip);
+        settings.loopTime = true;
+        AnimationUtility.SetAnimationClipSettings(kinectClip, settings);
+
+        settings = AnimationUtility.GetAnimationClipSettings(leapLeftClip);
+        settings.loopTime = true;
+        AnimationUtility.SetAnimationClipSettings(leapLeftClip, settings);
+
+        settings = AnimationUtility.GetAnimationClipSettings(leapRightClip);
+        settings.loopTime = true;
+        AnimationUtility.SetAnimationClipSettings(leapRightClip, settings);
+
         kinectRecorder.ResetRecording();
         leapLeftRecorder.ResetRecording();
         leapRightRecorder.ResetRecording();
@@ -165,16 +165,51 @@ public class RecRepGestureANIM : MonoBehaviour
         leapLeftRecorder.BindComponentsOfType<Transform>(leapLeftRootObj,true);
         leapRightRecorder.BindComponentsOfType<Transform>(leapRightRootObj,true);
     }
+
+    // Mecanim bones used by the humanoid rig
+    protected static readonly HumanBodyBones[] usedMecanimBones = new HumanBodyBones[]{
+
+        HumanBodyBones.Hips,
+		HumanBodyBones.Spine,
+//      HumanBodyBones.Chest,
+		HumanBodyBones.Neck,
+//		HumanBodyBones.Head,
+	
+		HumanBodyBones.LeftUpperArm,
+		HumanBodyBones.LeftLowerArm,
+		HumanBodyBones.LeftHand,
+//		HumanBodyBones.LeftIndexProximal,
+//		HumanBodyBones.LeftIndexIntermediate,
+//		HumanBodyBones.LeftThumbProximal,
+	
+		 HumanBodyBones.RightUpperArm,
+		 HumanBodyBones.RightLowerArm,
+		 HumanBodyBones.RightHand,
+//		 HumanBodyBones.RightIndexProximal,
+//		 HumanBodyBones.RightIndexIntermediate,
+//		 HumanBodyBones.RightThumbProximal,
+	
+		 HumanBodyBones.LeftUpperLeg,
+		 HumanBodyBones.LeftLowerLeg,
+		 HumanBodyBones.LeftFoot,
+//		 HumanBodyBones.LeftToes},
+	
+		 HumanBodyBones.RightUpperLeg,
+		 HumanBodyBones.RightLowerLeg,
+		 HumanBodyBones.RightFoot,
+//		 HumanBodyBones.RightToes,
+	
+		 HumanBodyBones.LeftShoulder,
+		 HumanBodyBones.RightShoulder,
+		 HumanBodyBones.LeftIndexProximal,
+		 HumanBodyBones.RightIndexProximal,
+		 HumanBodyBones.LeftThumbProximal,
+		 HumanBodyBones.RightThumbProximal,
+    };
       
     IEnumerator RecInfoCoroutine()
     {
-        yield return new WaitForSeconds(1);
+        yield return new WaitForSeconds(0.5f);
         recInfo.text = "";
     }
-
-    IEnumerator ReplayInfoCoroutine()
-    {
-        yield return new WaitForSeconds(1);
-        replayInfo.text = "";
-    }  
 }
