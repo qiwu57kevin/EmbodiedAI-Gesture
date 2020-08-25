@@ -21,10 +21,16 @@ public class RecRepGestureANIM : MonoBehaviour
     Toggle LeftRight;
     Toggle TrainTest;
 
-    // Recorder of Leap and Kinect gameobjects
-    GameObjectRecorder kinectRecorder;
+    // Recorder of Leap hands
     GameObjectRecorder leapLeftRecorder;
     GameObjectRecorder leapRightRecorder;
+
+    // AnimationCurves for Kinect recordings
+    Dictionary<int, AnimationCurve> kinectMuscleCurves = new Dictionary<int, AnimationCurve>(); // Kinect avatar muscle values
+    Dictionary<int, AnimationCurve> kinectRootCurves = new Dictionary<int, AnimationCurve>(); // Kinct avatar root motions
+    // HumanPose and HumanPoseHandler for Kinect humanoid rig
+    HumanPose humanPose = new HumanPose();
+    HumanPoseHandler humanPoseHandler;
 
     // AnimationClip to save
     AnimationClip kinectClip;
@@ -34,13 +40,14 @@ public class RecRepGestureANIM : MonoBehaviour
     // Recording status
     bool isRecording = false;
     bool isTraining = false;
+    float time = 0f; // time elapsed
+
     EnvSetup academyAgent;
 
     public GameObject kinectAvatar;
     public GameObject leapHandLeft;
     public GameObject leapHandRight;
 
-    public GameObject kinectRootObj;
     public GameObject leapLeftRootObj;
     public GameObject leapRightRootObj;
 
@@ -49,7 +56,6 @@ public class RecRepGestureANIM : MonoBehaviour
         academyAgent = GameObject.Find("EnvSetup").GetComponent<EnvSetup>();
         isTraining = academyAgent.TrainingCheck();
 
-        kinectRecorder = new GameObjectRecorder(kinectAvatar);
         leapLeftRecorder = new GameObjectRecorder(leapHandLeft);
         leapRightRecorder = new GameObjectRecorder(leapHandRight);
 
@@ -70,12 +76,31 @@ public class RecRepGestureANIM : MonoBehaviour
             // targetDropdown.AddOptions(Enum.GetNames(typeof(EnvSetup.targets)).ToList());
             targetNumDropdown.AddOptions(Enumerable.Range(0,10).Select(num => num.ToString()).ToList());
         }
+
+        // Initialized Kinect setup
+        humanPoseHandler = new HumanPoseHandler(kinectAvatar.GetComponent<Animator>().avatar, kinectAvatar.transform);
+
+        foreach(HumanBodyBones boneType in Kinect2MecanimBones)
+        {
+            for(int i=0;i<3;i++)
+            {
+                int muscle = HumanTrait.MuscleFromBone((int)boneType, i);
+                if(!kinectMuscleCurves.ContainsKey(muscle) && muscle!=-1)
+                    kinectMuscleCurves.Add(muscle, null);
+            }
+        }
+
+        for(int i=0;i<10;i++)
+        {
+            kinectRootCurves.Add(i, null);
+        }
     }
 
     void LateUpdate()
     {
         if(isRecording)
         {
+            time += Time.deltaTime;
             TakeRecordings();
         }
     }
@@ -93,6 +118,8 @@ public class RecRepGestureANIM : MonoBehaviour
                 recInfo.text = "Record Ended!";
                 recStartEnd.GetComponentInChildren<Text>().text = "Start Recording";
                 StartCoroutine(RecInfoCoroutine());
+
+                time = 0f;
             }
             else
             {
@@ -116,20 +143,6 @@ public class RecRepGestureANIM : MonoBehaviour
         SaveClipToPath(leapRightClip, "Assets/Recordings/Leap/Right/", "LeapRight", recorder, target, targetNum, handedness, forTraining);
     }
 
-    private void TakeRecordings()
-    {
-        kinectRecorder.TakeSnapshot(Time.deltaTime);
-        leapLeftRecorder.TakeSnapshot(Time.deltaTime);
-        leapRightRecorder.TakeSnapshot(Time.deltaTime);
-    }
-
-    private void SaveRecordingsToClip()
-    {
-        kinectRecorder.SaveToClip(kinectClip);
-        leapLeftRecorder.SaveToClip(leapLeftClip);
-        leapRightRecorder.SaveToClip(leapRightClip);
-    }
-
     private void SaveClipToPath(AnimationClip clip, string path, string device, string recorder, string target, int targetNum, bool handedness, bool forTraining)
     {
         DateTime now = DateTime.Now;
@@ -139,8 +152,60 @@ public class RecRepGestureANIM : MonoBehaviour
         AssetDatabase.CreateAsset(clip, filePath);
     }
 
+    private void TakeRecordings()
+    {
+        // Leap
+        leapLeftRecorder.TakeSnapshot(Time.deltaTime);
+        leapRightRecorder.TakeSnapshot(Time.deltaTime);
+
+        // Kinect
+        humanPoseHandler.GetHumanPose(ref humanPose);
+        foreach(var item in kinectMuscleCurves)
+        {
+            item.Value.AddKey(time, humanPose.muscles[item.Key]);
+        }
+
+        for(int i=0;i<3;i++)
+        {
+            kinectRootCurves[i].AddKey(time, humanPose.bodyPosition[i]);
+        }
+        for(int i=0;i<4;i++)
+        {
+            kinectRootCurves[i+3].AddKey(time, humanPose.bodyRotation[i]);
+        }
+        for(int i=0;i<3;i++)
+        {
+            kinectRootCurves[i+7].AddKey(time, kinectAvatar.transform.localPosition[i]);
+        }
+    }
+
+    private void SaveRecordingsToClip()
+    {
+        // Leap
+        leapLeftRecorder.SaveToClip(leapLeftClip);
+        leapRightRecorder.SaveToClip(leapRightClip);
+
+        // Kinect
+        foreach(var item in kinectMuscleCurves)
+        {
+            kinectClip.SetCurve("", typeof(Animator), HumanTrait.MuscleName[item.Key], item.Value);
+        }
+
+        kinectClip.SetCurve("", typeof(Animator),"RootT.x", kinectRootCurves[0]);
+        kinectClip.SetCurve("", typeof(Animator),"RootT.y", kinectRootCurves[1]);
+        kinectClip.SetCurve("", typeof(Animator),"RootT.z", kinectRootCurves[2]);
+        kinectClip.SetCurve("", typeof(Animator),"RootQ.x", kinectRootCurves[3]);
+        kinectClip.SetCurve("", typeof(Animator),"RootQ.y", kinectRootCurves[4]);
+        kinectClip.SetCurve("", typeof(Animator),"RootQ.z", kinectRootCurves[5]);
+        kinectClip.SetCurve("", typeof(Animator),"RootQ.w", kinectRootCurves[6]);
+        kinectClip.SetCurve("", typeof(Transform),"localPosition.x", kinectRootCurves[7]);
+        kinectClip.SetCurve("", typeof(Transform),"localPosition.y", kinectRootCurves[8]);
+        kinectClip.SetCurve("", typeof(Transform),"localPosition.z", kinectRootCurves[9]);
+    }
+
     private void ResetRecorder()
     {
+        // Reset all clips
         kinectClip = new AnimationClip();
         leapLeftClip = new AnimationClip();
         leapRightClip = new AnimationClip();
@@ -157,17 +222,25 @@ public class RecRepGestureANIM : MonoBehaviour
         settings.loopTime = true;
         AnimationUtility.SetAnimationClipSettings(leapRightClip, settings);
 
-        kinectRecorder.ResetRecording();
+        // Leap specific
         leapLeftRecorder.ResetRecording();
         leapRightRecorder.ResetRecording();
-
-        kinectRecorder.BindComponentsOfType<Transform>(kinectRootObj,true);
         leapLeftRecorder.BindComponentsOfType<Transform>(leapLeftRootObj,true);
         leapRightRecorder.BindComponentsOfType<Transform>(leapRightRootObj,true);
+
+        // Kinect specific
+        foreach(int boneIdx in kinectMuscleCurves.Keys.ToList())
+        {
+            kinectMuscleCurves[boneIdx] = new AnimationCurve();
+        }
+        foreach(int rootIdx in kinectRootCurves.Keys.ToList())
+        {
+            kinectRootCurves[rootIdx] = new AnimationCurve();
+        }
     }
 
     // Mecanim bones used by the humanoid rig
-    protected static readonly HumanBodyBones[] usedMecanimBones = new HumanBodyBones[]{
+    public static readonly HumanBodyBones[] Kinect2MecanimBones = new HumanBodyBones[]{
 
         HumanBodyBones.Hips,
 		HumanBodyBones.Spine,
