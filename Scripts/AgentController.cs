@@ -66,27 +66,26 @@ public class AgentController : Agent
     int contactCount = 0;
 
     // CommunicationHub
-    CommunicationHub CommunicationHub;
+    CommunicationHub commHub;
 
-    // Kinect Avatar
-    Transform kinectAvatar;
-    Animator kinect_Animatior;
-    HumanPoseHandler kinectPoseHandler;
-    HumanPose kinectPose;
+    // Animaton capture
+    [Header("Observation Capture")]
+    public TakeAnimSnapshot animTaker;
 
     // Task and target selected from Academy
-    EnvSetup academyAgent;
-    EnvSetup.targets targetSelected;
-    int targetChildNum;
+    EnvSetup envSetup;
+    NavObj.ObjCategory catSelected;
+    NavObj.ObjType typeSelected;
+    int locIdxSelected;
     EnvSetup.tasks taskSelected; 
 
     // Training/Inference check
     bool isTraining;
     bool isInference;
     
-    // Target parent gameobject and selected target transform
-    Transform targetParent;
-    Transform target;
+    // Selected object list and the target object
+    Transform[] objList;
+    Transform targetObj;
  
     // Action state
     bool actionGoTo = false;
@@ -121,12 +120,12 @@ public class AgentController : Agent
         startingRotation = this.transform.rotation;
 
         // Find Academy
-        academyAgent = GameObject.Find("EnvSetup").GetComponent<EnvSetup>();
-        if (academyAgent!=null)
+        envSetup = GameObject.Find("EnvSetup").GetComponent<EnvSetup>();
+        if (envSetup!=null)
         {
-            isTraining = academyAgent.TrainingCheck();
+            isTraining = envSetup.TrainingCheck();
             isInference = !isTraining;
-            targetKeywords = Enum.GetNames(typeof(EnvSetup.targets)).ToList();
+            targetKeywords = Enum.GetNames(typeof(NavObj.ObjType)).ToList();
         }
         else
         {
@@ -135,32 +134,11 @@ public class AgentController : Agent
         }
 
         // Find CommunicationHub
-        CommunicationHub = GameObject.Find("EnvSetup").GetComponent<CommunicationHub>();
-        if (CommunicationHub==null)
+        commHub = GameObject.Find("EnvSetup").GetComponent<CommunicationHub>();
+        if (commHub==null)
         {
             Debug.LogError("Agent Controller: CommunicationHub not found");
             return;
-        }
-        
-        // Find target list
-        targetParent = GameObject.Find("Targets").transform;
-        if (targetParent==null)
-        {
-            Debug.LogError("Agent Controller: Target list not found");
-            return;
-        }
-
-        // Find Kinect avatar
-        kinectAvatar = GameObject.Find("KinectAvatar").transform;
-        if (kinectAvatar==null)
-        {
-            Debug.LogError("Agent Controller: Kinect avatar not found");
-        }
-        else
-        {
-            kinect_Animatior = kinectAvatar.GetComponentInChildren<Animator>();
-            kinectPoseHandler = new HumanPoseHandler(kinect_Animatior.avatar, kinectAvatar);
-            kinectPose = new HumanPose();
         }
 
         if(drawAgentPath)
@@ -184,42 +162,35 @@ public class AgentController : Agent
 
     public void Update()
     {
-        if(isInference)
-        {  
-            recognizer.DictationResult += (text, confidence) =>
-            {
-                if (text != null)
-                    sentence = text;
-            };
-        }
+        // if(isInference)
+        // {  
+        //     recognizer.DictationResult += (text, confidence) =>
+        //     {
+        //         if (text != null)
+        //             sentence = text;
+        //     };
+        // }
     }
 
     public override void OnEpisodeBegin()
     {
-        // Set agent velocity and angular velocity as 0
+        // Reset agent velocity and angular
         rBody.velocity = Vector3.zero;
         rBody.angularVelocity = Vector3.zero;
 
         if(CompletedEpisodes>0)
         {
-            target.gameObject.SetActive(false);
-            // foreach(Transform child in targetParent.Find(targetSelected.ToString()))
-            // {
-            //     child.gameObject.SetActive(false);
-            // }
-
-            if(source==Source.gesture||source==Source.both)
+            // Destroy objects in previous episode
+            foreach(GameObject obj in objList.Select(objT => objT.gameObject))
             {
-                // Load new data from Kinect or Leap (prevents repetitive loading of same data file)
-                if(isTraining||academyAgent.replayInInference)
-                    CommunicationHub.RequestData();
+                Destroy(obj);
             }
 
             // Save path if required (only in inference)
             if(saveAgentPath&&drawAgentPath)
             {
                 DateTime now = DateTime.Now;
-                string savePath = Directory.GetCurrentDirectory() + "/Assets/Log/2Dpath/" + now.ToString("MM-dd-yyyy_HH-mm-ss") + $"{targetSelected}{targetChildNum}_episdoe-{CompletedEpisodes}.png";
+                string savePath = Directory.GetCurrentDirectory() + "/Assets/Log/2Dpath/" + now.ToString("MM-dd-yyyy_HH-mm-ss") + $"{catSelected}{locIdxSelected}{typeSelected}_episdoe-{CompletedEpisodes}.png";
                 PathDraw2D.SavePath2PNG(GameObject.Find("FloorPlanCamera").GetComponent<Camera>(), savePath);
             }
 
@@ -228,35 +199,31 @@ public class AgentController : Agent
                 if(EPISODE_SUCCESS)
                 {
                     tot_sr += 1.0f;
-                    tot_sr_sms += SuccessRateSMS(STEP_COUNT, target, startingPosition);
-                    LogSuccessRate(1f, SuccessRateSMS(STEP_COUNT, target, startingPosition), tot_sr/CompletedEpisodes, tot_sr_sms/CompletedEpisodes);
+                    tot_sr_sms += SuccessRateSMS(STEP_COUNT, targetObj, startingPosition);
+                    LogSuccessRate(1f, SuccessRateSMS(STEP_COUNT, targetObj, startingPosition), tot_sr/CompletedEpisodes, tot_sr_sms/CompletedEpisodes);
                 }
                 else
                 {
                     LogSuccessRate(0f, 0f, tot_sr, tot_sr_sms);
                 }
 
-                LogDTS(target);
+                LogDTS(targetObj);
             }
         }
 
-        // Set the next task ang taget by academy
-        academyAgent.settingTaskTarget();
+        // Set the next task ang target
+        envSetup.settingTaskTarget();
+        catSelected = envSetup.objCatSelected;
+        locIdxSelected = envSetup.objLocationIdxSelected;
+        taskSelected = envSetup.taskSelected;
+        if(isTraining||envSetup.replayInInference) 
+        {
+            objList = commHub.SetupReplay(catSelected, locIdxSelected);
+            targetObj = objList[0];
+        }
+        typeSelected = commHub.objType;
 
-        if (academyAgent.shuffleReplay) {academyAgent.testIdx = Random.Range(0,100);}
-
-        targetSelected = academyAgent.targetSelected;
-        taskSelected = academyAgent.taskSelected;
-        targetChildNum = academyAgent.targetChildNum;
-        target = targetParent.Find(targetSelected.ToString()).GetChild(targetChildNum);
-        // Activate only selected target
-        target.gameObject.SetActive(true);
-        // // Activate all targets with the same catergory
-        // foreach(Transform child in targetParent.Find(targetSelected.ToString()))
-        // {
-        //     child.gameObject.SetActive(true);
-        // }
-
+        
         // Reset Agent in a random position
         if (randomPosition)
         {
@@ -304,23 +271,23 @@ public class AgentController : Agent
             sensor.AddObservation(transform.localPosition.x);
             sensor.AddObservation(transform.localPosition.z);
 
-            // Agent velocity. Assume no vertical movement.
-            sensor.AddObservation(rBody.velocity.x);
-            sensor.AddObservation(rBody.velocity.z);
+            // // Agent velocity. Assume no vertical movement.
+            // sensor.AddObservation(rBody.velocity.x);
+            // sensor.AddObservation(rBody.velocity.z);
 
             // Agent rotation. Assume only rotation in y-axis.
             sensor.AddObservation(transform.localEulerAngles.y);
         }
         else
         {
-            sensor.AddObservation(new float[5]);
+            sensor.AddObservation(new float[3]);
         }
 
         if(source!=Source.gesture&&source!=Source.none)
         {
             if(isTraining)
             {
-                sensor.AddOneHotObservation((int)targetSelected, targetKeywords.Count);
+                sensor.AddOneHotObservation((int)typeSelected, targetKeywords.Count);
             }
             else
             {
@@ -340,8 +307,15 @@ public class AgentController : Agent
         }
 
         // Add Kinect observations
-        if(source!=Source.audio&&source!=Source.none) {addKinectObs(sensor);}
-        else {sensor.AddObservation(new float[102]);}
+        if(source!=Source.audio&&source!=Source.none)
+        {
+            sensor.AddObservation(animTaker.TakeKinectSnapshot());
+            sensor.AddObservation(animTaker.TakeLeapSnapshot());
+        }
+        else 
+        {
+            sensor.AddObservation(new float[373]);
+        }
     }
     
     public override void OnActionReceived(float[] vectorAction)
@@ -400,12 +374,13 @@ public class AgentController : Agent
         }
 
         // Get current distance to the target
-        distanceToTarget = DistanceToTarget(transform, target);
+        distanceToTarget = DistanceToTarget(transform, targetObj);
 
         EPISODE_DONE = CalculateRewards(taskSelected);
 
         if(EPISODE_DONE)
         {
+            // Rotation penalty: avoid excessive rotation
             if(rotateActions>180f/turnAmount) {AddReward(-0.005f * (rotateActions - 180/turnAmount));} // excessive rotation penalty
             EndEpisode();
         }
@@ -479,7 +454,7 @@ public class AgentController : Agent
                 if(requireStop? actionGoTo:true)
                 {    
                     // Conditions for a successfull episode: sufficiently close to target, execute stop action, target in camera view
-                    if(distanceToTarget<navigationThreshold && isVisibleFrom(rgbCam, target))
+                    if(distanceToTarget<navigationThreshold && isVisibleFrom(rgbCam, targetObj))
                     {
                         SetReward(1f);
                         done = true;
@@ -534,23 +509,6 @@ public class AgentController : Agent
         return done;
     }
 
-    // Add encoded Kinect gesture as Observations
-    private void addKinectObs(VectorSensor sensor)
-    {
-        if(isTraining || academyAgent.replayInInference)
-        {
-            CommunicationHub.RigOverwriter("Kinect"); // add kinect data as input
-        }
-
-        kinectPoseHandler.GetHumanPose(ref kinectPose);
-
-        // Add position and rotation as the agent observations
-        sensor.AddObservation(kinectPose.bodyPosition);
-        sensor.AddObservation(kinectPose.bodyRotation);
-        // Add the array of muscle values as the agent observations
-        sensor.AddObservation(kinectPose.muscles);
-    }
-
     // check the obstacles in front of the agent before it hits them
     private bool CheckObstacle()
     {
@@ -599,7 +557,7 @@ public class AgentController : Agent
         Vector3 pt1 = positionOnFloor + new Vector3(0,collider.radius,0); // The center of the sphere at the start of the capsule
         Vector3 pt2 = positionOnFloor - new Vector3(0,collider.radius,0) + new Vector3(0,collider.height,0); // The center of the sphere at the end of the capsule
         Collider[] colliders = Physics.OverlapCapsule(pt1, pt2, collider.radius);
-        return colliders.Length == 0 && (Distance2D(positionOnFloor, target.position) >= (2*navigationThreshold));
+        return colliders.Length == 0 && (Distance2D(positionOnFloor, targetObj.position) >= (2*navigationThreshold));
     }
     
     // Check if an Renderer is rendered by a specific camera

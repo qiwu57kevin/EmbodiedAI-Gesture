@@ -15,5 +15,9 @@ public class PlayerHeightOffsetEditor: Editor
         {
             myScript.OffsetPlayerHeight();
         }
+        if(GUILayout.Button("Save Player Infomation"))
+        {
+            myScript.SavePlayerInformation();
+        }
     }
 }

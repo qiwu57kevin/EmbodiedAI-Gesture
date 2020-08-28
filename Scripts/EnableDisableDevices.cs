@@ -12,7 +12,7 @@ public class EnableDisableDevices : MonoBehaviour
     public bool enableLeap = false;
 
 
-    void Awake()
+    void Start()
     {
         if(!enableKinect)
         {

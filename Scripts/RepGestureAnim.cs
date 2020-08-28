@@ -19,9 +19,6 @@ public class RepGestureAnim : MonoBehaviour
 
     public EnvSetup envSetup;
 
-    public AnimationClip clip1;
-    public AnimationClip clip2;
-
     private bool isTraining;
     private bool isReplaying;
 
@@ -47,8 +44,6 @@ public class RepGestureAnim : MonoBehaviour
             ClearAnimCtrl(leapLeftController);
             ClearAnimCtrl(leapRightController);
         }
-
-        PlayAnimClipInCtrl(kinectController, clip1);
     }
 
     // Set an animation clip as the default clip and play it in the animator controller
@@ -67,14 +62,6 @@ public class RepGestureAnim : MonoBehaviour
         foreach(ChildAnimatorState animState in animStates)
         {
             controller.layers[0].stateMachine.RemoveState(animState.state);
-        }
-    }
-
-    void Update()
-    {
-        if(Input.GetKeyDown(KeyCode.Space))
-        {
-            PlayAnimClipInCtrl(kinectController, clip2);
         }
     }
 

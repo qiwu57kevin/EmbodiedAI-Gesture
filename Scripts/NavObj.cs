@@ -11,7 +11,7 @@ public class NavObj
     // obj category
     public enum ObjCategory
     {
-        onFloor, onFurnitureTop, onWall
+        OnFloor, OnFurnitureTop, OnWall
     };
 
     // obj type
