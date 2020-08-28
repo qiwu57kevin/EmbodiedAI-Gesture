@@ -1,7 +1,4 @@
-/*
-!/Scripts/
-!/Scenes/
-!/Resources/
-!.gitignore
-!README.*
+/.pytest_cache/
+/.vscode/
+/Log/
 *.meta
