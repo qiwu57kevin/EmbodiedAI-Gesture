@@ -79,13 +79,26 @@ public class AgentController : Agent
     int locIdxSelected;
     EnvSetup.tasks taskSelected; 
 
+    public NavObj.ObjType CurrentObjType
+    {
+        get
+        {
+            return typeSelected;
+        }
+        set
+        {
+            typeSelected = value;
+        }
+    }
+
     // Training/Inference check
     bool isTraining;
     bool isInference;
     
     // Selected object list and the target object
-    Transform[] objList;
-    Transform targetObj;
+    [Header("Objects Selected")]
+    [SerializeField] Transform[] objList;
+    [SerializeField] Transform targetObj;
  
     // Action state
     bool actionGoTo = false;
@@ -604,8 +617,8 @@ public class AgentController : Agent
     {
         statsRecorder.Add("Metrics/Success Rate", sr);
         statsRecorder.Add("Metrics/Success Rate Weighted by Min Steps", sms);
-        statsRecorder.Add("Metrics/Average Success Rate", avg_sr, StatAggregationMethod.MostRecent);
-        statsRecorder.Add("Metrics/Average Success Rate Weighted by Min Steps", avg_sms, StatAggregationMethod.MostRecent);
+        statsRecorder.Add("Metrics/Average Success Rate", avg_sr);
+        statsRecorder.Add("Metrics/Average Success Rate Weighted by Min Steps", avg_sms);
     }
 
     // Calculate distance to success (Chaplot et al., 2020) (DTS), which is the distance of the agent from the success threshold boundary when the episode ends

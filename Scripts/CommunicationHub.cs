@@ -20,10 +20,13 @@ public class CommunicationHub: MonoBehaviour
     private string animAbsPath;
     [Tooltip("Script that controlls the replay of animation clips")]
     public RepGestureAnim replayController;
+    private AnimatorController[] animCtrls;
     [Tooltip("How many object do you want in each episode")][Range(2,5)]
     public int numObjects = 3;
     [Tooltip("Player ID list. Default is 1 to 10")]
     public int[] playerIDs = Enumerable.Range(1,10).ToArray();
+    public PlayerHeightOffset playerInfoCenter;
+    private Dictionary<int,float> playerID2Height = new Dictionary<int, float>();
 
     // Trainign setup
     public EnvSetup envSetup;
@@ -39,7 +42,7 @@ public class CommunicationHub: MonoBehaviour
     // List to save all object prefabs
     private List<NavObj> objList = new List<NavObj>();
 
-    // Lists to save all animation clips
+    // List to save all animation clips
     private List<AnimationClip> animList = new List<AnimationClip>();
 
     void Awake()
@@ -54,7 +57,11 @@ public class CommunicationHub: MonoBehaviour
             return;
         }
 
-        deviceList = new string[]{"Kinect", "LeapLeft", "LeapRight"};
+        // deviceList = new string[]{"Kinect", "LeapLeft", "LeapRight"};
+        // animCtrls = new AnimatorController[3]{replayController.kinectController,replayController.leapLeftController,replayController.leapRightController};
+        deviceList = new string[]{"Kinect", "LeapRight"}; // only replay on right hand
+        animCtrls = new AnimatorController[2]{replayController.kinectController, replayController.leapRightController}; // only replay on right hand
+         
         objCatList = Enum.GetNames(typeof(NavObj.ObjCategory)).ToArray();
 
         // Load all prefabs at specified path
@@ -66,7 +73,10 @@ public class CommunicationHub: MonoBehaviour
 
     void Start()
     {       
-
+        foreach(int id in playerIDs)
+        {
+            playerID2Height.Add(id, playerInfoCenter.playerHeightList.Where(player => int.Parse(player.name)==id).ToArray()[0].height);
+        }
     }
 
     // Setup replay for device using the replay controller, and return the instantiated gameobjects
@@ -85,8 +95,11 @@ public class CommunicationHub: MonoBehaviour
         }
 
         // Play selected animation clips
-        AnimatorController[] animCtrls = new AnimatorController[3]{replayController.kinectController,replayController.leapLeftController,replayController.leapRightController}; 
         int playerID = playerIDs[Random.Range(0,playerIDs.Length)]; // select a random player ID
+        // Scale Kinect avatar according to playerID
+        float scale = playerID2Height[playerID]/1.75f;
+        GameObject.Find("KinectAvatar").transform.localScale = new Vector3(scale, scale, scale);
+
         for(int i=0;i<deviceList.Length;i++)
         {
             replayController.PlayAnimClipInCtrl(animCtrls[i],SelectAnimClip(deviceList[i], playerID, m_objCat, m_objLocIdx));
@@ -128,14 +141,14 @@ public class CommunicationHub: MonoBehaviour
     private Object[] SelectNavObj(NavObj.ObjCategory m_objCat, int numObj)
     {
         NavObj[] qualifiedList = objList.Where(obj => obj.objCat==m_objCat).ToArray();
-        objType = qualifiedList[0].objType;
 
-        Object[] selectedList = new Object[numObj];
+        NavObj[] selectedList = new NavObj[numObj];
         for(int i=0;i<numObj;i++)
-        {
-            selectedList[i] = qualifiedList[Random.Range(0,qualifiedList.Length)].objInstance;
+        { 
+            selectedList[i] = qualifiedList[Random.Range(0,qualifiedList.Length)];
         }
-        return selectedList;
+        objType = selectedList[0].objType;
+        return selectedList.Select(obj => obj.objInstance).ToArray();
     }
 
     // Select Animation Clips with provided object category and location

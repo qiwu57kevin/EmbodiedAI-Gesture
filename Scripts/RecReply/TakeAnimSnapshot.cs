@@ -27,16 +27,15 @@ public class TakeAnimSnapshot : MonoBehaviour
     public List<float> TakeKinectSnapshot()
     {
         List<float> kinectObs = new List<float>();
-        kinectObs.Add(kinectGameObject.transform.localScale.x);
-        kinectObs.AddRange(Vector3ToFloats(kinectGameObject.transform.localPosition));
-        kinectObs.AddRange(Vector3ToFloats(kinectHipT.transform.localPosition));
+        kinectObs.Add(kinectGameObject.transform.localScale.x); // Kinect avatar scale, related to player information
+        kinectObs.AddRange(Vector3ToFloats(kinectGameObject.transform.position)); //
+        kinectObs.AddRange(Vector3ToFloats(kinectHipT.transform.position));
         
         // Track rotations for each joint (positions will not be tracked)
         foreach(Transform joint in observedKinectTs)
         {
-            kinectObs.AddRange(Vector3ToFloats(joint.localRotation.eulerAngles/180f));
+            kinectObs.AddRange(Vector3ToFloats(joint.rotation.eulerAngles/180f));
         }
-
         return kinectObs;
         // in total 148
     }
@@ -47,8 +46,8 @@ public class TakeAnimSnapshot : MonoBehaviour
         foreach(Transform leapT in observedLeapTs)
         {
             leapObs.AddRange(Vector3ToFloats(leapT.localScale));
-            leapObs.AddRange(Vector3ToFloats(leapT.localPosition));
-            leapObs.AddRange(Vector3ToFloats(leapT.localRotation.eulerAngles/180f));
+            leapObs.AddRange(Vector3ToFloats(leapT.position));
+            leapObs.AddRange(Vector3ToFloats(leapT.rotation.eulerAngles/180f));
         }
         return leapObs;
         // in total 225
@@ -57,10 +56,10 @@ public class TakeAnimSnapshot : MonoBehaviour
     private List<float> Vector3ToFloats(Vector3 vec)
     {
         List<float> floatList = new List<float>();
-        for(int i=0;i<3;i++)
-        {
-            floatList.Add(vec[i]);
-        }
+        // Normalize position w.r.t room size (x*z*y = L*W*H = 8*5*2.5)
+        floatList.Add(vec[0]/8f);
+        floatList.Add(vec[1]/2.5f);
+        floatList.Add(vec[2]/5f);
         return floatList;
     }
 

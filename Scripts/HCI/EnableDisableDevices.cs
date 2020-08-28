@@ -22,7 +22,7 @@ public class EnableDisableDevices : MonoBehaviour
         {
             kinectManager.enabled = true;
         }
-        KinectManager.Instance.refreshAvatarControllers();
+        // KinectManager.Instance.refreshAvatarControllers();
 
         if(!enableLeap)
         {
