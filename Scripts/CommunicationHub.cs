@@ -93,7 +93,7 @@ public class CommunicationHub: MonoBehaviour
     public void SetupReplay(NavObj.ObjCategory m_objCat, int m_objLocIdx)
     {
         // Play selected animation clips
-        int playerID = playerIDs[Random.Range(0,playerIDs.Length)]; // select a random player ID
+        int playerID = playerIDs[isTraining? Random.Range(0,6):Random.Range(6,10)]; // select a random player ID
         // Scale Kinect avatar according to playerID
         float scale = playerID2Height[playerID]/1.75f;
         GameObject.Find("KinectAvatar").transform.localScale = new Vector3(scale, scale, scale);

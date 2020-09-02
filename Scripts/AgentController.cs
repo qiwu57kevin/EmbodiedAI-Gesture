@@ -292,6 +292,8 @@ public class AgentController : Agent
         STEP_COUNT = 0;
         EPISODE_DONE = false;
         EPISODE_SUCCESS = false;
+        distanceToTarget = 1000f;
+        lastDistanceToTarget = 1000f;
 
         //Reset agent trail renderer
         PathDraw2D.ResetPathDraw();
@@ -466,9 +468,34 @@ public class AgentController : Agent
         switch(task)
         {
             case EnvSetup.tasks.GoTo:
-                // if (actionGoTo == true)
-                if(requireStop? actionGoTo:true)
-                {    
+                if(requireStop) // If STOP action is required, the agent must notify the player that it has reaches the target
+                {
+                    if(actionGoTo==true)
+                    {
+                        // Conditions for a successfull episode: sufficiently close to target, execute stop action, target in camera view
+                        if(distanceToTarget<navigationThreshold && isVisibleFrom(rgbCam, targetObj))
+                        {
+                            SetReward(1f);
+                            done = true;
+                            EPISODE_SUCCESS = true;
+                        }
+                        else
+                        {
+                            SetReward(-0.2f);
+                            done = true;
+                        }
+                    }
+                    else
+                    {
+                        if(lastDistanceToTarget>distanceToTarget)
+                        {
+                            AddReward(5f/MaxStep);
+                        }
+                        lastDistanceToTarget = distanceToTarget;
+                    }
+                }
+                else // If STOP action is not required, the agent will be notified by the player when reaches the target
+                {
                     // Conditions for a successfull episode: sufficiently close to target, execute stop action, target in camera view
                     if(distanceToTarget<navigationThreshold && isVisibleFrom(rgbCam, targetObj))
                     {
@@ -476,19 +503,6 @@ public class AgentController : Agent
                         done = true;
                         EPISODE_SUCCESS = true;
                     }
-                    else if(requireStop? actionGoTo:false)
-                    {
-                        SetReward(-0.2f);
-                        done = true;
-                    }
-                }
-                else if(requireStop)
-                {
-                    if(lastDistanceToTarget>distanceToTarget)
-                    {
-                        AddReward(1f/MaxStep);
-                    }
-                    lastDistanceToTarget = distanceToTarget;
                 }
                 
                 // AddReward(navigationThreshold/(MaxStep*distanceToTarget));
@@ -521,7 +535,7 @@ public class AgentController : Agent
         }
 
         // Determine if episode is done
-        if(actionGoTo||actionDrop||actionTurnOn||actionTurnOff||(actionTake&&task!=EnvSetup.tasks.Bring)) {done=true;}
+        // if(actionGoTo||actionDrop||actionTurnOn||actionTurnOff||(actionTake&&task!=EnvSetup.tasks.Bring)) {done=true;}
 
         return done;
     }
