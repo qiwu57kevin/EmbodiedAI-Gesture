@@ -9287,7 +9287,7 @@ MonoBehaviour:
   sentence: 
   useGPS: 0
   useCategory: 0
-  useGesture: 0
+  useGesture: 1
   logCustomMetrics: 1
   drawAgentPath: 0
   saveAgentPath: 0

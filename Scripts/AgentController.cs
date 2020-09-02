@@ -314,7 +314,7 @@ public class AgentController : Agent
         }
         else
         {
-            sensor.AddObservation(new float[3]);
+            // sensor.AddObservation(new float[3]);
         }
 
         if(useCategory==true)

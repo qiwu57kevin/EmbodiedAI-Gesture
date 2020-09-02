@@ -17,9 +17,11 @@ public class NavObj
     // obj type
     public enum ObjType
     {
-        chair, sofa, lamp, table, ball, box, cabinet, rack, bed, fridge,
-        cup, book, laptop, plant, monitor, cellphone, pen, wallet, bottle, comb,
-        clock, painting, map, hat, photo, artifact, socket, window, balloon, board
+        // chair, sofa, lamp, table, ball, box, cabinet, rack, bed, fridge,
+        // cup, book, laptop, plant, monitor, cellphone, pen, wallet, bottle, comb,
+        // clock, painting, map, hat, photo, artifact, socket, window, balloon, board
+
+        chair, sofa, lamp, table, cup, book, laptop, plant, clock, painting
     };
 
     // NavObj attributes
