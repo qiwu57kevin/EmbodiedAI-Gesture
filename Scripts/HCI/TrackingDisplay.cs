@@ -70,12 +70,12 @@ public class TrackingDisplay : MonoBehaviour
         }
     }
 
-    private void onImageReady(object sender, Leap.ImageEventArgs args)
-    {
-        if(leapTex2D==null)
-            leapTex2D = new Texture2D(args.image.Width, args.image.Height, TextureFormat.R8, false);
-        leapTex2D.LoadRawTextureData(args.image.Data(Leap.Image.CameraType.LEFT));
-        leapTex2D.Apply();
-        Graphics.Blit(leapTex2D, leapRT);
-    }
+    // private void onImageReady(object sender, Leap.ImageEventArgs args)
+    // {
+    //     if(leapTex2D==null)
+    //         leapTex2D = new Texture2D(args.image.Width, args.image.Height, TextureFormat.R8, false);
+    //     leapTex2D.LoadRawTextureData(args.image.Data(Leap.Image.CameraType.LEFT));
+    //     leapTex2D.Apply();
+    //     Graphics.Blit(leapTex2D, leapRT);
+    // }
 }

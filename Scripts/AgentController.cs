@@ -118,8 +118,6 @@ public class AgentController : Agent
     int STEP_COUNT = 0;
     bool EPISODE_DONE = false; // if the episode is completed or not
     bool EPISODE_SUCCESS = false; // if the episode is a success or not
-    float tot_sr = 0; // total success rates in one episode
-    float tot_sr_sms = 0; // total success rates(sms) in one episode
     StatsRecorder statsRecorder;
 
     // System random generator
@@ -223,13 +221,11 @@ public class AgentController : Agent
             {
                 if(EPISODE_SUCCESS)
                 {
-                    tot_sr += 1.0f;
-                    tot_sr_sms += SuccessRateSMS(STEP_COUNT, targetObj, startingPosition, startingFacingNorm);
-                    LogSuccessRate(1f, SuccessRateSMS(STEP_COUNT, targetObj, startingPosition, startingFacingNorm), tot_sr/CompletedEpisodes, tot_sr_sms/CompletedEpisodes);
+                    LogSuccessRate(1f, SuccessRateSMS(STEP_COUNT, targetObj, startingPosition, startingFacingNorm));
                 }
                 else
                 {
-                    LogSuccessRate(0f, 0f, tot_sr, tot_sr_sms);
+                    LogSuccessRate(0f, 0f);
                 }
 
                 LogDTS(targetObj);
@@ -296,8 +292,6 @@ public class AgentController : Agent
         STEP_COUNT = 0;
         EPISODE_DONE = false;
         EPISODE_SUCCESS = false;
-        tot_sr = 0;
-        tot_sr_sms = 0;
 
         //Reset agent trail renderer
         PathDraw2D.ResetPathDraw();
@@ -462,13 +456,10 @@ public class AgentController : Agent
         // Uniform time penalty
         AddReward(-1f/MaxStep);
 
-        // Adaptive time penalty
-        // AddReward(-5f/(MaxStep*Distance2D(startingPosition, target.position)));
-
         // Collision penalty
         if (contact)
         {
-            AddReward(-20f/MaxStep);
+            AddReward(-5f/MaxStep);
         }
 
         // Add reward based on stage
@@ -487,7 +478,7 @@ public class AgentController : Agent
                     }
                     else if(requireStop? actionGoTo:false)
                     {
-                        SetReward(-0.1f);
+                        SetReward(-0.2f);
                         done = true;
                     }
                 }
@@ -495,7 +486,7 @@ public class AgentController : Agent
                 {
                     if(lastDistanceToTarget>distanceToTarget)
                     {
-                        AddReward(10f/MaxStep);
+                        AddReward(1f/MaxStep);
                     }
                     lastDistanceToTarget = distanceToTarget;
                 }
@@ -644,12 +635,10 @@ public class AgentController : Agent
         return (float)minSteps/Mathf.Max(minSteps, totSteps);
     }
 
-    private void LogSuccessRate(float sr, float sms, float avg_sr, float avg_sms)
+    private void LogSuccessRate(float sr, float sms)
     {
         statsRecorder.Add("Metrics/Success Rate", sr);
         statsRecorder.Add("Metrics/Success Rate Weighted by Min Steps", sms);
-        statsRecorder.Add("Metrics/Average Success Rate", avg_sr);
-        statsRecorder.Add("Metrics/Average Success Rate Weighted by Min Steps", avg_sms);
     }
 
     // Calculate distance to success (Chaplot et al., 2020) (DTS), which is the distance of the agent from the success threshold boundary when the episode ends

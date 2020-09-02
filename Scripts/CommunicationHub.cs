@@ -70,7 +70,7 @@ public class CommunicationHub: MonoBehaviour
 
         // Load all prefabs at specified path
         recordingAbsPath = Application.dataPath + objSavePath;
-        animAbsPath = Application.dataPath + animSavePath;
+        animAbsPath = Application.dataPath + animSavePath + (isTraining? "Train/":"Test/");
         LoadNavObjPrefabs(objList, recordingAbsPath);
         LoadAnimationClips(animList, animAbsPath);
     }
