@@ -3506,7 +3506,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 905571025}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 67450236c73fa554f88600a1715ae083, type: 3}
   m_Name: 
@@ -9248,7 +9248,7 @@ MonoBehaviour:
   m_BrainParameters:
     VectorObservationSize: 308
     NumStackedVectorObservations: 1
-    VectorActionSize: 04000000
+    VectorActionSize: 05000000
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
   m_Model: {fileID: 0}
@@ -9280,7 +9280,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1306097176030678029
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9302,7 +9302,7 @@ MonoBehaviour:
   navigationThreshold: 1.5
   randomPosition: 1
   humanoidMovement: 0
-  requireStop: 0
+  requireStop: 1
   targetKeywords: []
   actionKeywords: []
   confidence: 1

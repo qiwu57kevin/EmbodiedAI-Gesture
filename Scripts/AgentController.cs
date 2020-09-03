@@ -478,6 +478,7 @@ public class AgentController : Agent
                             SetReward(1f);
                             done = true;
                             EPISODE_SUCCESS = true;
+                            Debug.Log("Yeah!");
                         }
                         else
                         {
@@ -551,7 +552,7 @@ public class AgentController : Agent
     {
         // Vector3 closestPoint = targetObjBounds.ClosestPoint(pos);
         // return Distance2D(pos, closestPoint)-0.3f; // offset by object radius
-        return Distance2D(pos, target.position);
+        return Distance2D(pos, target.position) - 0.3f;
     }
 
     // check the obstacles in front of the agent before it hits them
