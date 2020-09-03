@@ -98,7 +98,7 @@ public class AgentController : Agent
     [Header("Objects Selected")]
     [SerializeField] Transform[] objList;
     [SerializeField] Transform targetObj;
-    Bounds targetObjBounds; // Bounds used to find the closest point to the target
+    // Bounds targetObjBounds; // Bounds used to find the closest point to the target
     Renderer[] targetObjRenderers; // Renderers for target object
  
     // Action state
@@ -249,12 +249,12 @@ public class AgentController : Agent
         }
         typeSelected = commHub.objType;
         // Reset the target object bounds
-        targetObjBounds = new Bounds(targetObj.position, Vector3.zero);
-        // Find target object Bounds
-        foreach(Collider col in targetObj.GetComponentsInChildren<Collider>())
-        {
-            targetObjBounds.Encapsulate(col.bounds);
-        }
+        // targetObjBounds = new Bounds(Vector3.zero, Vector3.zero);
+        // // Find target object Bounds
+        // foreach(Collider col in targetObj.GetComponentsInChildren<Collider>())
+        // {
+        //     targetObjBounds.Encapsulate(col.bounds);
+        // }
         // Find target object renderers
         targetObjRenderers = targetObj.GetComponentsInChildren<Renderer>();
 
@@ -549,8 +549,9 @@ public class AgentController : Agent
     // Calculate the distance to the object
     private float DistanceToTarget(Vector3 pos, Transform target)
     {
-        Vector3 closestPoint = targetObjBounds.ClosestPoint(pos);
-        return Distance2D(pos, closestPoint)-0.3f; // offset by object radius
+        // Vector3 closestPoint = targetObjBounds.ClosestPoint(pos);
+        // return Distance2D(pos, closestPoint)-0.3f; // offset by object radius
+        return Distance2D(pos, target.position);
     }
 
     // check the obstacles in front of the agent before it hits them
