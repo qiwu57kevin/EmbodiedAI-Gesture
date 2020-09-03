@@ -292,6 +292,8 @@ public class AgentController : Agent
         STEP_COUNT = 0;
         EPISODE_DONE = false;
         EPISODE_SUCCESS = false;
+        distanceToTarget = 1000f;
+        lastDistanceToTarget = 1000f;
 
         //Reset agent trail renderer
         PathDraw2D.ResetPathDraw();
@@ -478,7 +480,7 @@ public class AgentController : Agent
                     }
                     else if(requireStop? actionGoTo:false)
                     {
-                        SetReward(-0.2f);
+                        // SetReward(-0.2f);
                         done = true;
                     }
                 }
@@ -486,9 +488,13 @@ public class AgentController : Agent
                 {
                     if(lastDistanceToTarget>distanceToTarget)
                     {
-                        AddReward(1f/MaxStep);
+                        AddReward(5f/MaxStep);
                     }
                     lastDistanceToTarget = distanceToTarget;
+                    // if(distanceToTarget<navigationThreshold)
+                    // {
+                    //     AddReward(1f/MaxStep);
+                    // }
                 }
                 
                 // AddReward(navigationThreshold/(MaxStep*distanceToTarget));

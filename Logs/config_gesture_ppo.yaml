@@ -34,9 +34,9 @@ behaviors:
   Gesture:
     trainer_type: ppo
     hyperparameters:
-      batch_size: 1024 
-      buffer_size: 10240
-      learning_rate: 3e-4
+      batch_size: 512 
+      buffer_size: 5120
+      learning_rate: 5e-4
       beta: 0.005
       epsilon: 0.2
       lambd: 0.99
@@ -55,7 +55,7 @@ behaviors:
         gamma: 0.99
         strength: 0.02
         encoding_size: 256
-        learning_rate: 3e-4
+        learning_rate: 5e-4
     keep_checkpoints: 5
     max_steps: 5e5
     time_horizon: 128

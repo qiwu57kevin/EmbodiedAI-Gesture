@@ -9224,7 +9224,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 331
+    VectorObservationSize: 308
     NumStackedVectorObservations: 1
     VectorActionSize: 05000000
     VectorActionDescriptions: []
@@ -9286,7 +9286,7 @@ MonoBehaviour:
   confidence: 1
   sentence: 
   useGPS: 0
-  useCategory: 0
+  useCategory: 1
   useGesture: 1
   logCustomMetrics: 1
   drawAgentPath: 0
