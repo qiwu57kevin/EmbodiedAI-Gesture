@@ -116,7 +116,7 @@ public class CommunicationHub: MonoBehaviour
     }
 
     // Load all object prefabs from an absolute path
-    private void LoadNavObjPrefabs(List<NavObj> m_objList, string path)
+    public void LoadNavObjPrefabs(List<NavObj> m_objList, string path)
     {
         foreach(string objCat in Enum.GetNames(typeof(NavObj.ObjCategory)))
         {
@@ -209,7 +209,8 @@ public class CommunicationHub: MonoBehaviour
         }
         else
         {
-            objInst.transform.localRotation = ((GameObject)objOri).transform.localRotation;
+            // objInst.transform.localRotation = ((GameObject)objOri).transform.localRotation;
+            objInst.transform.localRotation = Quaternion.Euler(0,Random.Range(-180f,180f),0);
         }
         return objInst;
     }

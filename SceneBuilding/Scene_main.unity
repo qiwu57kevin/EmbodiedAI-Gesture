@@ -1053,7 +1053,7 @@ PrefabInstance:
     - target: {fileID: 8667437621237854047, guid: 13307691ba3247b48b398b4c34dd93dc,
         type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 13307691ba3247b48b398b4c34dd93dc, type: 3}
@@ -3474,6 +3474,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 905571026}
+  - component: {fileID: 905571027}
   m_Layer: 0
   m_Name: PosReceptacles
   m_TagString: Untagged
@@ -3498,6 +3499,27 @@ Transform:
   m_Father: {fileID: 2052115633}
   m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &905571027
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 905571025}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 67450236c73fa554f88600a1715ae083, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  posReceptacles: {fileID: 905571026}
+  roomRootT: {fileID: 1883611374}
+  objPrefab: {fileID: 6224159274750049704, guid: 10981e51220487a4f832fbc05f55427f,
+    type: 3}
+  objCat: 0
+  targetCamera: {fileID: 3259836406498514352, guid: 1b3d6d53ace467c4eaff289c84d4ab08,
+    type: 3}
+  trainImageSavePath: F:/Gesture Project/pretrain_cnn/train/
+  testImageSavePath: F:/Gesture Project/pretrain_cnn/test/
 --- !u!1 &910307254
 GameObject:
   m_ObjectHideFlags: 0
@@ -9226,7 +9248,7 @@ MonoBehaviour:
   m_BrainParameters:
     VectorObservationSize: 308
     NumStackedVectorObservations: 1
-    VectorActionSize: 05000000
+    VectorActionSize: 04000000
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
   m_Model: {fileID: 0}
@@ -9258,7 +9280,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1306097176030678029
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9280,14 +9302,14 @@ MonoBehaviour:
   navigationThreshold: 1.5
   randomPosition: 1
   humanoidMovement: 0
-  requireStop: 1
+  requireStop: 0
   targetKeywords: []
   actionKeywords: []
   confidence: 1
   sentence: 
   useGPS: 0
   useCategory: 1
-  useGesture: 0
+  useGesture: 1
   logCustomMetrics: 1
   drawAgentPath: 0
   saveAgentPath: 0
@@ -14248,7 +14270,7 @@ MonoBehaviour:
   objSavePath: /Resources/NavObj/
   animSavePath: /Resources/Recordings/
   replayController: {fileID: 1957831828}
-  numObjects: 1
+  numObjects: 3
   playerIDs: 0100000002000000030000000400000005000000060000000700000008000000090000000a000000
   playerInfoCenter: {fileID: 1957831827}
   envSetup: {fileID: 5251254797086864951}
@@ -14269,7 +14291,7 @@ PrefabInstance:
     - target: {fileID: 8055808841416789472, guid: 80264a314c02af441af991b97503f1e1,
         type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8055808841416789475, guid: 80264a314c02af441af991b97503f1e1,
         type: 3}
