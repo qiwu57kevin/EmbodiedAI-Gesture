@@ -57,7 +57,7 @@ behaviors:
         encoding_size: 256
         learning_rate: 3e-4
     keep_checkpoints: 5
-    max_steps: 5e5
+    max_steps: 1e6
     time_horizon: 128
     summary_freq: 2000
     threaded: true
