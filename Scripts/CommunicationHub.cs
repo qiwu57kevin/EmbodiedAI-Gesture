@@ -36,6 +36,14 @@ public class CommunicationHub: MonoBehaviour
     public Transform roomRootT;
     private bool isTraining;
 
+    [Header("Evaluation Setting")]
+    [Tooltip("If use new gesture recordings for training")]
+    public bool newGestures = false;
+    [Tooltip("If use new Objects for training")]
+    public bool newObjects = false;
+    [Tooltip("If use new Rooms for training")]
+    public bool newRooms = false;
+
     // Devie and target setup
     private string[] deviceList; // A list of device used (Kinect, Leap left&right)
     private string[] objCatList; // pbject catgory list
@@ -69,8 +77,8 @@ public class CommunicationHub: MonoBehaviour
         objCatList = Enum.GetNames(typeof(NavObj.ObjCategory)).ToArray();
 
         // Load all prefabs at specified path
-        recordingAbsPath = Application.dataPath + objSavePath + (isTraining? "Train/":"Test/");
-        animAbsPath = Application.dataPath + animSavePath + (isTraining? "Train/":"Test/");
+        recordingAbsPath = Application.dataPath + objSavePath + (newObjects? "Test/":"Train/");
+        animAbsPath = Application.dataPath + animSavePath + (newGestures? "Test/":"Train/");
         LoadNavObjPrefabs(objList, recordingAbsPath);
         LoadAnimationClips(animList, animAbsPath);
     }
@@ -93,7 +101,7 @@ public class CommunicationHub: MonoBehaviour
     public void SetupReplay(NavObj.ObjCategory m_objCat, int m_objLocIdx)
     {
         // Play selected animation clips
-        int playerID = playerIDs[isTraining? Random.Range(0,6):Random.Range(6,10)]; // select a random player ID
+        int playerID = playerIDs[newGestures? Random.Range(6,10):Random.Range(0,6)]; // select a random player ID
         // Scale Kinect avatar according to playerID
         float scale = playerID2Height[playerID]/1.75f;
         GameObject.Find("KinectAvatar").transform.localScale = new Vector3(scale, scale, scale);
@@ -107,9 +115,9 @@ public class CommunicationHub: MonoBehaviour
     // Select room for current episdoe
     public void SetupRoom()
     {
-        int roomNum = roomRootT.childCount;
-        int roomNumSelected = Random.Range(0,roomNum);
-        for(int i=0;i<roomNum;i++)
+        // int roomNum = roomRootT.childCount;
+        int roomNumSelected = newRooms? Random.Range(7,11):Random.Range(0,7);
+        for(int i=0;i<11;i++)
         {
             roomRootT.GetChild(i).gameObject.SetActive(i==roomNumSelected? true:false);
         }
