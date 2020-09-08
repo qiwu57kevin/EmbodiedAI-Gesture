@@ -93,7 +93,7 @@ public class CommunicationHub: MonoBehaviour
     public void SetupReplay(NavObj.ObjCategory m_objCat, int m_objLocIdx)
     {
         // Play selected animation clips
-        int playerID = playerIDs[Random.Range(0,playerIDs.Length)]; // select a random player ID
+        int playerID = playerIDs[isTraining? Random.Range(0,6):Random.Range(6,10)]; // select a random player ID
         // Scale Kinect avatar according to playerID
         float scale = playerID2Height[playerID]/1.75f;
         GameObject.Find("KinectAvatar").transform.localScale = new Vector3(scale, scale, scale);
@@ -116,7 +116,7 @@ public class CommunicationHub: MonoBehaviour
     }
 
     // Load all object prefabs from an absolute path
-    private void LoadNavObjPrefabs(List<NavObj> m_objList, string path)
+    public void LoadNavObjPrefabs(List<NavObj> m_objList, string path)
     {
         foreach(string objCat in Enum.GetNames(typeof(NavObj.ObjCategory)))
         {
@@ -209,7 +209,8 @@ public class CommunicationHub: MonoBehaviour
         }
         else
         {
-            objInst.transform.localRotation = ((GameObject)objOri).transform.localRotation;
+            // objInst.transform.localRotation = ((GameObject)objOri).transform.localRotation;
+            objInst.transform.localRotation = Quaternion.Euler(0,Random.Range(-180f,180f),0);
         }
         return objInst;
     }

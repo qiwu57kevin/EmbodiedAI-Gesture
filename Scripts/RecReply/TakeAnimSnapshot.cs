@@ -35,7 +35,7 @@ public class TakeAnimSnapshot : MonoBehaviour
         // Track rotations for each joint (positions will not be tracked)
         foreach(Transform joint in observedKinectTs)
         {
-            sensor.AddObservation(joint.rotation.eulerAngles/180f);
+            sensor.AddObservation(joint.rotation.eulerAngles/360f);
         }
         // in total 148
     }
@@ -46,7 +46,7 @@ public class TakeAnimSnapshot : MonoBehaviour
         {
             // leapObs.AddRange(Vector3ToFloats(leapT.localScale));
             sensor.AddObservation(PosToFloats(leapT.position));
-            sensor.AddObservation(leapT.rotation.eulerAngles/180f);
+            sensor.AddObservation(leapT.rotation.eulerAngles/360f);
         }
         // in total 150
     }
@@ -55,9 +55,9 @@ public class TakeAnimSnapshot : MonoBehaviour
     {
         List<float> floatList = new List<float>();
         // Normalize position w.r.t room size (x*z*y = L*W*H = 8*5*2.5)
-        floatList.Add(vec[0]/8f);
-        floatList.Add(vec[1]/2.5f);
-        floatList.Add(vec[2]/5f);
+        floatList.Add(vec.x/2f);
+        floatList.Add(vec.y/2f);
+        floatList.Add(vec.z/2f);
         return floatList;
     }
 

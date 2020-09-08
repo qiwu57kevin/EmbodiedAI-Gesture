@@ -98,7 +98,7 @@ public class AgentController : Agent
     [Header("Objects Selected")]
     [SerializeField] Transform[] objList;
     [SerializeField] Transform targetObj;
-    Bounds targetObjBounds; // Bounds used to find the closest point to the target
+    // Bounds targetObjBounds; // Bounds used to find the closest point to the target
     Renderer[] targetObjRenderers; // Renderers for target object
  
     // Action state
@@ -191,7 +191,7 @@ public class AgentController : Agent
         // Reset agent if it accidently moves out of the room bounds
         if(Mathf.Abs(transform.position.x)>4f||Mathf.Abs(transform.position.z)>2.5f)
         {
-            transform.position = Vector3.zero;
+            transform.position = startingPosition;
         }
     }
 
@@ -249,12 +249,12 @@ public class AgentController : Agent
         }
         typeSelected = commHub.objType;
         // Reset the target object bounds
-        targetObjBounds = new Bounds(targetObj.position, Vector3.zero);
-        // Find target object Bounds
-        foreach(Collider col in targetObj.GetComponentsInChildren<Collider>())
-        {
-            targetObjBounds.Encapsulate(col.bounds);
-        }
+        // targetObjBounds = new Bounds(Vector3.zero, Vector3.zero);
+        // // Find target object Bounds
+        // foreach(Collider col in targetObj.GetComponentsInChildren<Collider>())
+        // {
+        //     targetObjBounds.Encapsulate(col.bounds);
+        // }
         // Find target object renderers
         targetObjRenderers = targetObj.GetComponentsInChildren<Renderer>();
 
@@ -468,9 +468,35 @@ public class AgentController : Agent
         switch(task)
         {
             case EnvSetup.tasks.GoTo:
-                // if (actionGoTo == true)
-                if(requireStop? actionGoTo:true)
-                {    
+                if(requireStop) // If STOP action is required, the agent must notify the player that it has reaches the target
+                {
+                    if(actionGoTo==true)
+                    {
+                        // Conditions for a successfull episode: sufficiently close to target, execute stop action, target in camera view
+                        if(distanceToTarget<navigationThreshold && isVisibleFrom(rgbCam, targetObj))
+                        {
+                            SetReward(1f);
+                            done = true;
+                            EPISODE_SUCCESS = true;
+                            Debug.Log("Yeah!");
+                        }
+                        else
+                        {
+                            SetReward(-0.2f);
+                            done = true;
+                        }
+                    }
+                    else
+                    {
+                        if(lastDistanceToTarget>distanceToTarget)
+                        {
+                            AddReward(5f/MaxStep);
+                        }
+                        lastDistanceToTarget = distanceToTarget;
+                    }
+                }
+                else // If STOP action is not required, the agent will be notified by the player when reaches the target
+                {
                     // Conditions for a successfull episode: sufficiently close to target, execute stop action, target in camera view
                     if(distanceToTarget<navigationThreshold && isVisibleFrom(rgbCam, targetObj))
                     {
@@ -478,23 +504,6 @@ public class AgentController : Agent
                         done = true;
                         EPISODE_SUCCESS = true;
                     }
-                    else if(requireStop? actionGoTo:false)
-                    {
-                        // SetReward(-0.2f);
-                        done = true;
-                    }
-                }
-                else if(requireStop)
-                {
-                    if(lastDistanceToTarget>distanceToTarget)
-                    {
-                        AddReward(5f/MaxStep);
-                    }
-                    lastDistanceToTarget = distanceToTarget;
-                    // if(distanceToTarget<navigationThreshold)
-                    // {
-                    //     AddReward(1f/MaxStep);
-                    // }
                 }
                 
                 // AddReward(navigationThreshold/(MaxStep*distanceToTarget));
@@ -527,7 +536,7 @@ public class AgentController : Agent
         }
 
         // Determine if episode is done
-        if(actionGoTo||actionDrop||actionTurnOn||actionTurnOff||(actionTake&&task!=EnvSetup.tasks.Bring)) {done=true;}
+        // if(actionGoTo||actionDrop||actionTurnOn||actionTurnOff||(actionTake&&task!=EnvSetup.tasks.Bring)) {done=true;}
 
         return done;
     }
@@ -541,8 +550,9 @@ public class AgentController : Agent
     // Calculate the distance to the object
     private float DistanceToTarget(Vector3 pos, Transform target)
     {
-        Vector3 closestPoint = targetObjBounds.ClosestPoint(pos);
-        return Distance2D(pos, closestPoint)-0.3f; // offset by object radius
+        // Vector3 closestPoint = targetObjBounds.ClosestPoint(pos);
+        // return Distance2D(pos, closestPoint)-0.3f; // offset by object radius
+        return Distance2D(pos, target.position) - 0.3f;
     }
 
     // check the obstacles in front of the agent before it hits them
