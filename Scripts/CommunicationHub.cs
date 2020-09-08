@@ -69,7 +69,7 @@ public class CommunicationHub: MonoBehaviour
         objCatList = Enum.GetNames(typeof(NavObj.ObjCategory)).ToArray();
 
         // Load all prefabs at specified path
-        recordingAbsPath = Application.dataPath + objSavePath;
+        recordingAbsPath = Application.dataPath + objSavePath + (isTraining? "Train/":"Test/");
         animAbsPath = Application.dataPath + animSavePath + (isTraining? "Train/":"Test/");
         LoadNavObjPrefabs(objList, recordingAbsPath);
         LoadAnimationClips(animList, animAbsPath);

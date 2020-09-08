@@ -14,7 +14,7 @@ public class EnvSetupEditor : Editor
 
         if(!myScript.isTraining)
         {
-            myScript.replayInInference = EditorGUILayout.Toggle("Replay In Inference", false);
+            myScript.replayInInference = EditorGUILayout.Toggle("Replay In Inference", true);
         }
     }
 }

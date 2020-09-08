@@ -191,7 +191,7 @@ public class AgentController : Agent
         // Reset agent if it accidently moves out of the room bounds
         if(Mathf.Abs(transform.position.x)>4f||Mathf.Abs(transform.position.z)>2.5f)
         {
-            transform.position = Vector3.zero;
+            transform.position = startingPosition;
         }
     }
 
