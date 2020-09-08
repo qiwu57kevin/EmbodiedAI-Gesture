@@ -14528,8 +14528,8 @@ GameObject:
   - component: {fileID: 1306097176030678030}
   - component: {fileID: 1306097176030678033}
   - component: {fileID: 1306097176030678032}
-  - component: {fileID: 1306097176030678031}
   - component: {fileID: 1306097176030678035}
+  - component: {fileID: 1306097176030678031}
   m_Layer: 15
   m_Name: Embodied Agent
   m_TagString: Agent
@@ -14600,11 +14600,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 282f342c2ab144bf38be65d4d0c4e07d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Camera: {fileID: 8812713326967745625}
-  m_SensorName: Depth
-  m_Width: 150
-  m_Height: 150
-  m_Grayscale: 1
+  m_Camera: {fileID: 0}
+  m_SensorName: CameraSensor
+  m_Width: 84
+  m_Height: 84
+  m_Grayscale: 0
   m_Compression: 1
 --- !u!54 &1306097176030678032
 Rigidbody:
@@ -14667,10 +14667,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 282f342c2ab144bf38be65d4d0c4e07d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Camera: {fileID: 1306097177205799280}
-  m_SensorName: RGB
+  m_Camera: {fileID: 0}
+  m_SensorName: CameraSensor
   m_Width: 150
-  m_Height: 150
+  m_Height: 84
   m_Grayscale: 0
   m_Compression: 1
 --- !u!4 &1306097176030968200
@@ -25804,7 +25804,7 @@ MonoBehaviour:
   objSavePath: /Resources/NavObj/
   animSavePath: /Resources/Recordings/
   replayController: {fileID: 1957831828}
-  numObjects: 1
+  numObjects: 3
   playerIDs: 0100000002000000030000000400000005000000060000000700000008000000090000000a000000
   playerInfoCenter: {fileID: 1957831827}
   envSetup: {fileID: 5251254797086864951}

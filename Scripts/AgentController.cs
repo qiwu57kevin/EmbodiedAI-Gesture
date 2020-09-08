@@ -3,6 +3,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEditor;
 using Unity.MLAgents;
 using Unity.MLAgents.Sensors;
 using UnityEngine.Windows.Speech;
@@ -202,9 +203,9 @@ public class AgentController : Agent
         m_rBody.angularVelocity = Vector3.zero;
 
         // Quit application after 1000 episodes for evaluation
-        if(isInference&&CompletedEpisodes==1000)
+        if(isInference&&CompletedEpisodes>1000)
         {
-            Application.Quit();
+            EditorApplication.isPlaying=false;
         }
 
         if(CompletedEpisodes>0)
