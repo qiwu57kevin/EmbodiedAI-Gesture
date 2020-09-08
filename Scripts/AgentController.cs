@@ -201,6 +201,12 @@ public class AgentController : Agent
         m_rBody.velocity = Vector3.zero;
         m_rBody.angularVelocity = Vector3.zero;
 
+        // Quit application after 1000 episodes for evaluation
+        if(isInference&&CompletedEpisodes==1000)
+        {
+            Application.Quit();
+        }
+
         if(CompletedEpisodes>0)
         {
             // Destroy objects in previous episode
