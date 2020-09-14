@@ -32,19 +32,31 @@ public class CommunicationHub: MonoBehaviour
     [Header("Environment Setup")]
     // Trainign setup
     public EnvSetup envSetup;
+    public AgentController agentController;
     [Tooltip("Room root transform. It should includes different room setups as its child transforms")]
     public Transform roomRootT;
     private bool isTraining;
 
+    [Header("Evaluation Setting")]
+    [Tooltip("If use new gesture recordings for training")]
+    public bool newGestures = false;
+    [Tooltip("If use new Objects for training")]
+    public bool newObjects = false;
+    [Tooltip("If use new Rooms for training")]
+    public bool newRooms = false;
+
     // Devie and target setup
     private string[] deviceList; // A list of device used (Kinect, Leap left&right)
-    private string[] objCatList; // pbject catgory list
+    private string[] objCatList; // object catgory list
     private NavObj.ObjCategory objCategory;
     private int objLocationIdx;
     [HideInInspector] public NavObj.ObjType objType;
 
     // List to save all object prefabs
     private List<NavObj> objList = new List<NavObj>();
+    // List to save all selected navigable objects
+    private Object[] _selectedNavObjs;
+    private int[] _fakeTargetsLocIdx;
 
     // List to save all animation clips
     private List<AnimationClip> animList = new List<AnimationClip>();
@@ -69,8 +81,8 @@ public class CommunicationHub: MonoBehaviour
         objCatList = Enum.GetNames(typeof(NavObj.ObjCategory)).ToArray();
 
         // Load all prefabs at specified path
-        recordingAbsPath = Application.dataPath + objSavePath;
-        animAbsPath = Application.dataPath + animSavePath + (isTraining? "Train/":"Test/");
+        recordingAbsPath = Application.dataPath + objSavePath + (newObjects? "Test/":"Train/");
+        animAbsPath = Application.dataPath + animSavePath + (newGestures? "Test/":"Train/");
         LoadNavObjPrefabs(objList, recordingAbsPath);
         LoadAnimationClips(animList, animAbsPath);
     }
@@ -93,7 +105,7 @@ public class CommunicationHub: MonoBehaviour
     public void SetupReplay(NavObj.ObjCategory m_objCat, int m_objLocIdx)
     {
         // Play selected animation clips
-        int playerID = playerIDs[isTraining? Random.Range(0,6):Random.Range(6,10)]; // select a random player ID
+        int playerID = playerIDs[newGestures? Random.Range(6,10):Random.Range(0,6)]; // select a random player ID
         // Scale Kinect avatar according to playerID
         float scale = playerID2Height[playerID]/1.75f;
         GameObject.Find("KinectAvatar").transform.localScale = new Vector3(scale, scale, scale);
@@ -107,9 +119,9 @@ public class CommunicationHub: MonoBehaviour
     // Select room for current episdoe
     public void SetupRoom()
     {
-        int roomNum = roomRootT.childCount;
-        int roomNumSelected = Random.Range(0,roomNum);
-        for(int i=0;i<roomNum;i++)
+        // int roomNum = roomRootT.childCount;
+        int roomNumSelected = newRooms? Random.Range(7,11):Random.Range(0,7);
+        for(int i=0;i<11;i++)
         {
             roomRootT.GetChild(i).gameObject.SetActive(i==roomNumSelected? true:false);
         }
@@ -145,19 +157,23 @@ public class CommunicationHub: MonoBehaviour
     // Select an objet prefab with provided object category. Return a list of objects with the first one as the target object
     private Object[] SelectNavObj(NavObj.ObjCategory m_objCat, int numObj)
     {
-        // Select NavObj with category m_objCat
-        NavObj[] _list = objList.Where(obj => obj.objCat==m_objCat).ToArray();
+        if(envSetup.autoSetTarget||agentController.CompletedEpisodes==0)
+        {
+            // Select NavObj with category m_objCat
+            NavObj[] _list = objList.Where(obj => obj.objCat==m_objCat).ToArray();
 
-        // Randomly select one object type
-        objType = _list[Random.Range(0,_list.Length)].objType;
-        NavObj[] qualifiedList = _list.Where(obj => obj.objType==objType).ToArray();
+            // Randomly select one object type
+            objType = _list[Random.Range(0,_list.Length)].objType;
+            NavObj[] qualifiedList = _list.Where(obj => obj.objType==objType).ToArray();
 
-        NavObj[] selectedList = new NavObj[numObj];
-        for(int i=0;i<numObj;i++)
-        { 
-            selectedList[i] = qualifiedList[Random.Range(0,qualifiedList.Length)];
+            NavObj[] selectedList = new NavObj[numObj];
+            for(int i=0;i<numObj;i++)
+            { 
+                selectedList[i] = qualifiedList[Random.Range(0,qualifiedList.Length)];
+            }
+            _selectedNavObjs = selectedList.Select(obj => obj.objInstance).ToArray();
         }
-        return selectedList.Select(obj => obj.objInstance).ToArray();
+        return _selectedNavObjs;
     }
 
     // Select Animation Clips with provided object category and location
@@ -180,13 +196,13 @@ public class CommunicationHub: MonoBehaviour
         _objList[0] = InstantiateObj(m_objList[0], m_ObjCat, m_objLocIdx).transform;
 
         // Instantiate other objects in the object list if needed
-        if(m_objList.Length!=1)
+        if(m_objList.Length!=1&&(envSetup.autoSetTarget||agentController.CompletedEpisodes==0))
         {
-            int[] newIdxList = Enumerable.Range(0,10).Where(num => num!=m_objLocIdx).OrderBy(num => Guid.NewGuid()).Take(m_objList.Length-1).ToArray();
-            for(int i=1;i<_objList.Length;i++)
-            {
-            _objList[i] = InstantiateObj(m_objList[i], m_ObjCat, newIdxList[i-1]).transform;
-            }
+            _fakeTargetsLocIdx = Enumerable.Range(0,10).Where(num => num!=m_objLocIdx).OrderBy(num => Guid.NewGuid()).Take(m_objList.Length-1).ToArray();
+        }
+        for(int i=1;i<_objList.Length;i++)
+        {
+        _objList[i] = InstantiateObj(m_objList[i], m_ObjCat, _fakeTargetsLocIdx[i-1]).transform;
         }
 
         return _objList;

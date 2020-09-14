@@ -27,6 +27,7 @@ public class PathDraw2D : MonoBehaviour
         Image.ReadPixels(new Rect(0, 0, obsCam.targetTexture.width, obsCam.targetTexture.height), 0, 0);
         Image.Apply();
         RenderTexture.active = currentRT;
+        obsCam.targetTexture = null;
  
         var Bytes = ImageConversion.EncodeToPNG(Image);
         Destroy(Image);

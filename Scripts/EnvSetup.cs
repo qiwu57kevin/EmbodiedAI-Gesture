@@ -18,7 +18,9 @@ public class EnvSetup : MonoBehaviour
     public int objLocationIdxSelected = 0;
     public tasks taskSelected;
     [Tooltip("Auto set task and target. Deselect to fix task and target choice.")]
-    public bool autoSet = false;
+    public bool autoSetTarget = false;
+    [Tooltip("Auto set room. Deselect to fix room choice.")]
+    public bool autoSetRoom = false;
 
     [Header("Training/Inference Setup")]
     // academy parameters
@@ -39,7 +41,7 @@ public class EnvSetup : MonoBehaviour
     public void settingTaskTarget()
     {   
         // Auto set object category and location
-        if(autoSet)
+        if(autoSetTarget)
         {
             taskSelected = tasks.GoTo; // only GoTo for object navigation purpose
             switch(taskSelected)

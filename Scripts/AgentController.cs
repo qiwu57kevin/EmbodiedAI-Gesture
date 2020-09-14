@@ -3,6 +3,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEditor;
 using Unity.MLAgents;
 using Unity.MLAgents.Sensors;
 using UnityEngine.Windows.Speech;
@@ -43,6 +44,7 @@ public class AgentController : Agent
     public bool logCustomMetrics = false;
     public bool drawAgentPath = false;
     public bool saveAgentPath = false;
+    public string saveDirectory = "/Logs/path2D/";
 
     [Header("Agent vision sensors")]
     public Camera rgbCam;
@@ -201,6 +203,12 @@ public class AgentController : Agent
         m_rBody.velocity = Vector3.zero;
         m_rBody.angularVelocity = Vector3.zero;
 
+        // Quit application after 1000 episodes for evaluation
+        if(isInference&&CompletedEpisodes>1000)
+        {
+            EditorApplication.isPlaying=false;
+        }
+
         if(CompletedEpisodes>0)
         {
             // Destroy objects in previous episode
@@ -213,8 +221,9 @@ public class AgentController : Agent
             if(saveAgentPath&&drawAgentPath)
             {
                 DateTime now = DateTime.Now;
-                string savePath = Directory.GetCurrentDirectory() + "/Assets/Log/2Dpath/" + now.ToString("MM-dd-yyyy_HH-mm-ss") + $"{catSelected}{locIdxSelected}{typeSelected}_episdoe-{CompletedEpisodes}.png";
-                PathDraw2D.SavePath2PNG(GameObject.Find("FloorPlanCamera").GetComponent<Camera>(), savePath);
+                string savePath = Application.dataPath + saveDirectory;
+                Directory.CreateDirectory(savePath);
+                PathDraw2D.SavePath2PNG(GameObject.Find("FloorPlanCamera").GetComponent<Camera>(), savePath + now.ToString("MM-dd-yyyy_HH-mm-ss") + $"{catSelected}{locIdxSelected}{typeSelected}_episdoe-{CompletedEpisodes}.png");
             }
 
             if(logCustomMetrics)
@@ -233,7 +242,7 @@ public class AgentController : Agent
         }
 
         // Setup Room
-        commHub.SetupRoom();
+        if(envSetup.autoSetRoom) commHub.SetupRoom();
 
         // Set the next task ang target
         envSetup.settingTaskTarget();
@@ -243,7 +252,7 @@ public class AgentController : Agent
 
         objList = commHub.SetupTarget(catSelected, locIdxSelected);
         targetObj = objList[0];
-        if((isTraining||envSetup.replayInInference)&&(useGesture==true)) 
+        if((isTraining||envSetup.replayInInference)&&(useGesture)) 
         {
             commHub.SetupReplay(catSelected, locIdxSelected);
         }
