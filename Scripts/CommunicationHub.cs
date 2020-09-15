@@ -81,8 +81,8 @@ public class CommunicationHub: MonoBehaviour
         objCatList = Enum.GetNames(typeof(NavObj.ObjCategory)).ToArray();
 
         // Load all prefabs at specified path
-        recordingAbsPath = Application.dataPath + objSavePath + (newObjects? "Test/":"Train/");
-        animAbsPath = Application.dataPath + animSavePath + (newGestures? "Test/":"Train/");
+        recordingAbsPath = Application.dataPath + objSavePath + (!isTraining&&newObjects? "Test/":"Train/");
+        animAbsPath = Application.dataPath + animSavePath + (!isTraining&&newGestures? "Test/":"Train/");
         LoadNavObjPrefabs(objList, recordingAbsPath);
         LoadAnimationClips(animList, animAbsPath);
     }
@@ -105,7 +105,7 @@ public class CommunicationHub: MonoBehaviour
     public void SetupReplay(NavObj.ObjCategory m_objCat, int m_objLocIdx)
     {
         // Play selected animation clips
-        int playerID = playerIDs[newGestures? Random.Range(6,10):Random.Range(0,6)]; // select a random player ID
+        int playerID = playerIDs[!isTraining&&newGestures? Random.Range(6,10):Random.Range(0,6)]; // select a random player ID
         // Scale Kinect avatar according to playerID
         float scale = playerID2Height[playerID]/1.75f;
         GameObject.Find("KinectAvatar").transform.localScale = new Vector3(scale, scale, scale);
@@ -120,7 +120,7 @@ public class CommunicationHub: MonoBehaviour
     public void SetupRoom()
     {
         // int roomNum = roomRootT.childCount;
-        int roomNumSelected = newRooms? Random.Range(7,11):Random.Range(0,7);
+        int roomNumSelected = isTraining&&newRooms? Random.Range(7,11):Random.Range(0,7);
         for(int i=0;i<11;i++)
         {
             roomRootT.GetChild(i).gameObject.SetActive(i==roomNumSelected? true:false);

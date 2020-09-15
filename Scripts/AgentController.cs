@@ -23,20 +23,9 @@ public class AgentController : Agent
     public bool randomPosition = true;
     [Tooltip("Mimic human movement.")]
     public bool humanoidMovement = false;
-    [Tooltip("If require STOP as an additional action")]
-    public bool requireStop = false;
 
-    [Header("Voice Recognition Setting")]
-    public List<string> targetKeywords;
-    public List<string> actionKeywords;
-    private DictationRecognizer recognizer; // keyword recognizer
-    [Tooltip("Set up confidence for the voice recognizer. Higher confidence indicates higher accuracy.")] 
-    public ConfidenceLevel confidence = ConfidenceLevel.Medium;
-    public string sentence = ""; // sentence recognized in each step
-
-    // how many modals we have (we have audio + gesture)
+    // how many modals we have (we have category + gesture)
     [Header("Sensor Setting")]
-    public bool useGPS = false; // GPS
     public bool useCategory = false; // category info
     public bool useGesture = false; // gesture
 
@@ -51,35 +40,29 @@ public class AgentController : Agent
     public Camera depthCam;
     
 
-    // Agent position and dynamics
+    // Agent states
     Rigidbody m_rBody;
     CapsuleCollider m_collider;
     Vector3 startingPosition;
     Vector3 startingFacingNorm;
     Quaternion startingRotation;
-    Animator m_Animator; // a reference to the animator component
-
-    // Agent state
+    Animator m_Animator;
     float distanceToTarget = 1000f;
-    float lastDistanceToTarget = 1000f;
-    bool takeStatus = false;
-    bool TurnOnStatus = false;
-    bool contact = false;
-
-    // CommunicationHub
-    CommunicationHub commHub;
+    bool contact = false; // if the agent is in contact with an object
 
     // Animaton capture
     [Header("Observation Capture")]
     public TakeAnimSnapshot animTaker;
 
-    // Task and target selected from Academy
+    // External components
+    CommunicationHub commHub;
     EnvSetup envSetup;
+
+    // Navigation targets
+    List<string> targetKeywords; // a list of target types
     NavObj.ObjCategory catSelected;
     NavObj.ObjType typeSelected;
     int locIdxSelected;
-    EnvSetup.tasks taskSelected; 
-
     public NavObj.ObjType CurrentObjType
     {
         get
@@ -100,23 +83,11 @@ public class AgentController : Agent
     [Header("Objects Selected")]
     [SerializeField] Transform[] objList;
     [SerializeField] Transform targetObj;
-    // Bounds targetObjBounds; // Bounds used to find the closest point to the target
-    Renderer[] targetObjRenderers; // Renderers for target object
- 
-    // Action state
-    bool actionGoTo = false;
-    bool actionTake = false;
-    bool actionDrop = false;
-    bool actionTurnOn = false;
-    bool actionTurnOff = false;
-    bool wasPickUp = false;
-    bool hitWall= false;
+    // Renderers for target object
+    Renderer[] targetObjRenderers;
 
-    // Rotation and forward actions performed in one episode
-    int rotateActions = 0;
-    int forwardActions = 0;
-
-    // Agent performance measurement
+    // Agent performance measurement 
+    int rotateActions = 0; // Rotations performed in one episode
     int STEP_COUNT = 0;
     bool EPISODE_DONE = false; // if the episode is completed or not
     bool EPISODE_SUCCESS = false; // if the episode is a success or not
@@ -146,7 +117,6 @@ public class AgentController : Agent
         else
         {
             Debug.LogError("Agent Controller: Academy not found");
-            return;
         }
 
         // Find CommunicationHub
@@ -154,17 +124,12 @@ public class AgentController : Agent
         if (commHub==null)
         {
             Debug.LogError("Agent Controller: CommunicationHub not found");
-            return;
         }
 
         if(drawAgentPath)
         {
             PathDraw2D.EnablePathDraw();
         }
-
-        // Initiate dictation recognizer
-        recognizer = new DictationRecognizer(confidence);
-        recognizer.Start();
 
         // Get the animator and third person character component
         m_Animator = GetComponent<Animator>();
@@ -178,17 +143,12 @@ public class AgentController : Agent
 
     public void Update()
     {
-        // if(isInference)
-        // {  
-        //     recognizer.DictationResult += (text, confidence) =>
-        //     {
-        //         if (text != null)
-        //             sentence = text;
-        //     };
-        // }
-
-        m_rBody.velocity = Vector3.zero;
-        m_rBody.angularVelocity = Vector3.zero;
+        // If humanoid movements are not allowed, make sure rigidbody velocity is zero
+        if(!humanoidMovement)
+        {
+            m_rBody.velocity = Vector3.zero;
+            m_rBody.angularVelocity = Vector3.zero;
+        }
 
         // Reset agent if it accidently moves out of the room bounds
         if(Mathf.Abs(transform.position.x)>4f||Mathf.Abs(transform.position.z)>2.5f)
@@ -218,12 +178,18 @@ public class AgentController : Agent
             }
 
             // Save path if required (only in inference)
-            if(saveAgentPath&&drawAgentPath)
+            if(drawAgentPath)
             {
-                DateTime now = DateTime.Now;
-                string savePath = Application.dataPath + saveDirectory;
-                Directory.CreateDirectory(savePath);
-                PathDraw2D.SavePath2PNG(GameObject.Find("FloorPlanCamera").GetComponent<Camera>(), savePath + now.ToString("MM-dd-yyyy_HH-mm-ss") + $"{catSelected}{locIdxSelected}{typeSelected}_episdoe-{CompletedEpisodes}.png");
+                //Reset agent trail renderer
+                PathDraw2D.ResetPathDraw();
+
+                if(saveAgentPath)
+                {
+                    DateTime now = DateTime.Now;
+                    string savePath = Application.dataPath + saveDirectory;
+                    Directory.CreateDirectory(savePath);
+                    PathDraw2D.SavePath2PNG(GameObject.Find("FloorPlanCamera").GetComponent<Camera>(), savePath + now.ToString("MM-dd-yyyy_HH-mm-ss") + $"{catSelected}{locIdxSelected}{typeSelected}_episdoe-{CompletedEpisodes}.png");
+                }
             }
 
             if(logCustomMetrics)
@@ -241,33 +207,9 @@ public class AgentController : Agent
             }
         }
 
-        // Setup Room
-        if(envSetup.autoSetRoom) commHub.SetupRoom();
-
-        // Set the next task ang target
-        envSetup.settingTaskTarget();
-        catSelected = envSetup.objCatSelected;
-        locIdxSelected = envSetup.objLocationIdxSelected;
-        taskSelected = envSetup.taskSelected;
-
-        objList = commHub.SetupTarget(catSelected, locIdxSelected);
-        targetObj = objList[0];
-        if((isTraining||envSetup.replayInInference)&&(useGesture)) 
-        {
-            commHub.SetupReplay(catSelected, locIdxSelected);
-        }
-        typeSelected = commHub.objType;
-        // Reset the target object bounds
-        // targetObjBounds = new Bounds(Vector3.zero, Vector3.zero);
-        // // Find target object Bounds
-        // foreach(Collider col in targetObj.GetComponentsInChildren<Collider>())
-        // {
-        //     targetObjBounds.Encapsulate(col.bounds);
-        // }
-        // Find target object renderers
-        targetObjRenderers = targetObj.GetComponentsInChildren<Renderer>();
-
-        
+        // Reset the whole environment
+        ResetEnv();
+      
         // Reset Agent in a random position
         if (randomPosition)
         {
@@ -286,65 +228,21 @@ public class AgentController : Agent
         startingFacingNorm = transform.forward;
         startingRotation = transform.rotation;
 
-        // Reset rotation and forward movement counter
+        // Reset rotation movement counter
         rotateActions = 0;
-        forwardActions = 0;
-
-        // Reset actions
-        actionGoTo = false;
-        actionTake = false;
-        actionDrop = false;
-        actionTurnOn = false;
-        actionTurnOff = false;
 
         // Reset performance measurements
         STEP_COUNT = 0;
         EPISODE_DONE = false;
         EPISODE_SUCCESS = false;
         distanceToTarget = 1000f;
-        lastDistanceToTarget = 1000f;
-
-        //Reset agent trail renderer
-        PathDraw2D.ResetPathDraw();
     }
 
     public override void CollectObservations(VectorSensor sensor)
     {
-        if(useGPS) // use agent poses from Unity if no camera/rendertexture repsent
+        if(useCategory)
         {
-            // Agent position. Assume no vertical movement.
-            sensor.AddObservation(transform.localPosition.x);
-            sensor.AddObservation(transform.localPosition.z);
-
-            // // Agent velocity. Assume no vertical movement.
-            // sensor.AddObservation(rBody.velocity.x);
-            // sensor.AddObservation(rBody.velocity.z);
-
-            // Agent rotation. Assume only rotation in y-axis.
-            sensor.AddObservation(transform.localEulerAngles.y);
-        }
-        else
-        {
-            // sensor.AddObservation(new float[3]);
-        }
-
-        if(useCategory==true)
-        {
-            if(isTraining)
-            {
-                sensor.AddOneHotObservation((int)typeSelected, targetKeywords.Count);
-            }
-            else
-            {
-                if(targetKeywords.Exists(keyword => sentence.Contains(keyword)))
-                {
-                    sensor.AddOneHotObservation(targetKeywords.FindIndex(keyword => sentence.Contains(keyword)), targetKeywords.Count);
-                }
-                else
-                {
-                    sensor.AddObservation(new float[targetKeywords.Count]);
-                }
-            }
+            sensor.AddOneHotObservation((int)typeSelected, targetKeywords.Count);
         }
         else
         {
@@ -367,29 +265,22 @@ public class AgentController : Agent
     {
         int action = (int)vectorAction[0];
 
-        if(humanoidMovement)
+        if(humanoidMovement) // Humanoid movements are enabled
         {
             m_Animator.SetFloat("Forward", 0);
             m_Animator.SetFloat("Turn", 0);
 
             switch(action)
             {
-                case 1:
+                case 1: // Move forward
                     m_Animator.SetFloat("Forward", 0.2f);
                     transform.Translate(transform.forward * forwardAmount, Space.World);
-                    // Debug.Log(m_Animator.deltaPosition.magnitude);
                     break;
-                case 2:
+                case 2: // Turn left
                     transform.Rotate(0, turnAmount, 0);
                     break;
-                case 3:
+                case 3: // Turn right
                     transform.Rotate(0, -turnAmount, 0);
-                    break;
-                case 4: // Action: GoTo
-                    if(requireStop)
-                    {
-                        actionGoTo = true;
-                    }
                     break;
             }
         }
@@ -399,30 +290,21 @@ public class AgentController : Agent
             {
                 case 1: // Move forward
                     transform.Translate(transform.forward * forwardAmount, Space.World);
-                    // rBody.AddForce(transform.forward * forwardAmount, ForceMode.VelocityChange);
                     break;
                 case 2: // Turn right
-                    // transform.Rotate(0, turnAmount * Time.deltaTime, 0);
                     transform.Rotate(0, turnAmount, 0);
                     break;
                 case 3: // Turn left
                     // transform.Rotate(0, -turnAmount * Time.deltaTime, 0);
                     transform.Rotate(0, -turnAmount, 0);
                     break;
-                case 4: // Action: GoTo
-                    if(requireStop)
-                    {
-                        actionGoTo = true;
-                    }
-                    break;
             }
         }
 
         // Get current distance to the target
         distanceToTarget = DistanceToTarget(transform.position, targetObj);
-
-        EPISODE_DONE = CalculateRewards(taskSelected);
-
+        // Calculate rewards and check if the episode is completed
+        EPISODE_DONE = CalculateRewards();
         if(EPISODE_DONE)
         {
             // Rotation penalty: avoid excessive rotation
@@ -451,16 +333,12 @@ public class AgentController : Agent
             actionsOut[0] = 3;
             // Debug.Log("Left");
         }
-        if (requireStop&&Input.GetKey(KeyCode.Space))
-        {
-            actionsOut[0] = 4;
-        }
     }
 
     #region Customized Functions
 
     // Calculate Rewards based on task, and task stage
-    private bool CalculateRewards(EnvSetup.tasks task)
+    private bool CalculateRewards()
     {
         bool done = false;
 
@@ -473,81 +351,34 @@ public class AgentController : Agent
             AddReward(-5f/MaxStep);
         }
 
-        // Add reward based on stage
-        switch(task)
+        if(distanceToTarget<navigationThreshold && isVisibleFromCam(rgbCam, targetObj))
         {
-            case EnvSetup.tasks.GoTo:
-                if(requireStop) // If STOP action is required, the agent must notify the player that it has reaches the target
-                {
-                    if(actionGoTo==true)
-                    {
-                        // Conditions for a successfull episode: sufficiently close to target, execute stop action, target in camera view
-                        if(distanceToTarget<navigationThreshold && isVisibleFrom(rgbCam, targetObj))
-                        {
-                            SetReward(1f);
-                            done = true;
-                            EPISODE_SUCCESS = true;
-                            Debug.Log("Yeah!");
-                        }
-                        else
-                        {
-                            SetReward(-0.2f);
-                            done = true;
-                        }
-                    }
-                    else
-                    {
-                        if(lastDistanceToTarget>distanceToTarget)
-                        {
-                            AddReward(5f/MaxStep);
-                        }
-                        lastDistanceToTarget = distanceToTarget;
-                    }
-                }
-                else // If STOP action is not required, the agent will be notified by the player when reaches the target
-                {
-                    // Conditions for a successfull episode: sufficiently close to target, execute stop action, target in camera view
-                    if(distanceToTarget<navigationThreshold && isVisibleFrom(rgbCam, targetObj))
-                    {
-                        SetReward(1f);
-                        done = true;
-                        EPISODE_SUCCESS = true;
-                    }
-                }
-                
-                // AddReward(navigationThreshold/(MaxStep*distanceToTarget));
-
-                break;
-            case EnvSetup.tasks.PickUp:
-                if (actionTake == true)
-                {
-                    SetReward(1f);
-                }
-                break;
-            case EnvSetup.tasks.Bring:
-                if (actionTake == true && actionDrop == true)
-                {
-                    SetReward(1f);
-                }
-                break;
-            case EnvSetup.tasks.TurnOn:
-                if (actionTurnOn == true)
-                {
-                    SetReward(1f);
-                }
-                break;
-            case EnvSetup.tasks.TurnOff:
-                if (actionTurnOff == true)
-                {
-                    SetReward(1f);
-                }
-                break;
+            SetReward(1f);
+            done = true;
+            EPISODE_SUCCESS = true;
         }
-
-        // Determine if episode is done
-        // if(actionGoTo||actionDrop||actionTurnOn||actionTurnOff||(actionTake&&task!=EnvSetup.tasks.Bring)) {done=true;}
-
         return done;
+    }
+
+    // Reset the environment, including rooms and targets
+    private void ResetEnv()
+    {
+        // Setup Room
+        if(envSetup.autoSetRoom) commHub.SetupRoom();
+
+        // Set the next task ang target
+        envSetup.settingTaskTarget();
+        catSelected = envSetup.objCatSelected;
+        locIdxSelected = envSetup.objLocationIdxSelected;
+
+        objList = commHub.SetupTarget(catSelected, locIdxSelected);
+        targetObj = objList[0];
+        if((isTraining||envSetup.replayInInference)&&(useGesture)) 
+        {
+            commHub.SetupReplay(catSelected, locIdxSelected);
+        }
+        typeSelected = commHub.objType;
+        targetObjRenderers = targetObj.GetComponentsInChildren<Renderer>();
     }
 
     // The Euclidean distance of two object in x-z plane.
@@ -562,19 +393,6 @@ public class AgentController : Agent
         // Vector3 closestPoint = targetObjBounds.ClosestPoint(pos);
         // return Distance2D(pos, closestPoint)-0.3f; // offset by object radius
         return Distance2D(pos, target.position) - 0.3f;
-    }
-
-    // check the obstacles in front of the agent before it hits them
-    private bool CheckObstacle()
-    {
-        CapsuleCollider collider = GetComponent<CapsuleCollider>(); 
-        Vector3 pt1 = transform.TransformPoint(collider.center);
-        pt1.y -= collider.height/2;
-        Vector3 pt2 = transform.TransformPoint(collider.center);
-        pt2.y += collider.height/2;
-        // Collider[] colliders = Physics.OverlapCapsule(pt1, pt2, collider.radius * 2);
-        // return colliders.Where(col => col.CompareTag("Environment") || col.CompareTag("Structure")).ToArray().Length != 0;
-        return Physics.CapsuleCast(pt1, pt2, collider.radius, transform.forward, 0.3f);
     }
 
     // Randomly choose agent positions based on the room width and length
@@ -616,7 +434,7 @@ public class AgentController : Agent
     }
     
     // Check if an Renderer is rendered by a specific camera
-    public bool isVisibleFrom(Camera camera, Transform target)
+    public bool isVisibleFromCam(Camera camera, Transform target)
     {
         // Get planes making up the camera frustrum
         Plane[] planes = GeometryUtility.CalculateFrustumPlanes(camera);
@@ -677,21 +495,6 @@ public class AgentController : Agent
     ///=========================================================================
     ///Unity events
 
-    // Trigger
-    // void OnTriggerEnter(Collider collider)
-    // {
-    //     if(collider.tag == "Environment" || collider.tag == "Structure")
-    //     {
-    //         contact = true;
-    //     }
-    // }
-
-    // void OnTriggerExit(Collider collider)
-    // {
-    //     contact = false;
-    // }
-
-    // Collision
     void OnCollisionEnter(Collision collision)
     {
         if(collision.collider.tag == "Environment" || collision.collider.tag == "Structure")
@@ -705,11 +508,6 @@ public class AgentController : Agent
         contact = false;
 
     }
-
-    // void OnCollisionStay()
-    // {
-    //     Debug.Log("Hit!");
-    // }
 
     ///Unity events
     ///=========================================================================
