@@ -11,6 +11,7 @@ public class DisplayTrainInfo : MonoBehaviour
     public Animator leapAnimator;
     public Text displayArea;
     public EnvSetup envSetup;
+    public AgentController agentCtrl;
 
     private AnimatorController kinectCtrl;
     private AnimatorController leapCtrl;
@@ -19,7 +20,7 @@ public class DisplayTrainInfo : MonoBehaviour
 
     void LateUpdate()
     {
-        if(envSetup.isTraining)
+        if(envSetup.isTraining && agentCtrl.useGesture)
         {
             kinectCtrl = kinectAnimator.runtimeAnimatorController as AnimatorController;
             leapCtrl = leapAnimator.runtimeAnimatorController as AnimatorController;

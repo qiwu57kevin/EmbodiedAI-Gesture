@@ -29,6 +29,7 @@ public class NavObj
     public ObjCategory objCat; // obj category
     public ObjType objType; // obj type
     public Object objInstance; // Gameobject instance
+    public int objInstanceNum; // Object instance number. Each gameObject created in the scenen will have a unique tag
 
     // Initialize a NavObj
     public NavObj(Object obj, int catNum)
@@ -37,5 +38,6 @@ public class NavObj
         objType = (ObjType)Enum.GetNames(typeof(ObjType)).ToList().IndexOf(objName.Split('_')[0]);
         objCat = (ObjCategory)catNum; // 0: onFloor, 1: onFurnitureTop, 2: onWall
         objInstance = obj;
+        objInstanceNum = 0;
     }
 }

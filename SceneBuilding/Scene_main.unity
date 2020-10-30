@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.4430032, g: 0.49219626, b: 0.571926, a: 1}
+  m_IndirectSpecularColor: {r: 0.44300273, g: 0.492195, b: 0.57192504, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -5739,6 +5739,31 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 1883611374}
     m_Modifications:
+    - target: {fileID: 8055808840780376299, guid: 80264a314c02af441af991b97503f1e1,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -3.178
+      objectReference: {fileID: 0}
+    - target: {fileID: 8055808840780376299, guid: 80264a314c02af441af991b97503f1e1,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 1.728
+      objectReference: {fileID: 0}
+    - target: {fileID: 8055808840814465647, guid: 80264a314c02af441af991b97503f1e1,
+        type: 3}
+      propertyPath: m_TagString
+      value: Structure
+      objectReference: {fileID: 0}
+    - target: {fileID: 8055808841135867555, guid: 80264a314c02af441af991b97503f1e1,
+        type: 3}
+      propertyPath: m_TagString
+      value: Structure
+      objectReference: {fileID: 0}
+    - target: {fileID: 8055808841404675426, guid: 80264a314c02af441af991b97503f1e1,
+        type: 3}
+      propertyPath: m_TagString
+      value: Structure
+      objectReference: {fileID: 0}
     - target: {fileID: 8055808841416789472, guid: 80264a314c02af441af991b97503f1e1,
         type: 3}
       propertyPath: m_Name
@@ -5799,6 +5824,31 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8055808841916320106, guid: 80264a314c02af441af991b97503f1e1,
+        type: 3}
+      propertyPath: m_TagString
+      value: Structure
+      objectReference: {fileID: 0}
+    - target: {fileID: 8055808841938182550, guid: 80264a314c02af441af991b97503f1e1,
+        type: 3}
+      propertyPath: m_TagString
+      value: Structure
+      objectReference: {fileID: 0}
+    - target: {fileID: 8055808841978625489, guid: 80264a314c02af441af991b97503f1e1,
+        type: 3}
+      propertyPath: m_TagString
+      value: Untagged
+      objectReference: {fileID: 0}
+    - target: {fileID: 8055808842285393233, guid: 80264a314c02af441af991b97503f1e1,
+        type: 3}
+      propertyPath: m_TagString
+      value: Structure
+      objectReference: {fileID: 0}
+    - target: {fileID: 8056511783677465503, guid: 80264a314c02af441af991b97503f1e1,
+        type: 3}
+      propertyPath: m_TagString
+      value: Environment
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 80264a314c02af441af991b97503f1e1, type: 3}
 --- !u!4 &1271308226 stripped
@@ -5822,7 +5872,7 @@ PrefabInstance:
     - target: {fileID: 1017556268877080236, guid: 24e0820793947dd46834a68fecc78ef1,
         type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1017556268877080239, guid: 24e0820793947dd46834a68fecc78ef1,
         type: 3}
@@ -6805,6 +6855,7 @@ MonoBehaviour:
   leapAnimator: {fileID: 4546456989327754643}
   displayArea: {fileID: 1668630283}
   envSetup: {fileID: 5251254797086864951}
+  agentCtrl: {fileID: 1306097176030678029}
 --- !u!114 &1623672395
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7927,7 +7978,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f836d119207f9e740af38e2f6f44f031, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  displayKinectImage: 1
+  displayKinectImage: 0
   KinectImage: {fileID: 1462393799}
   kinectManager: {fileID: 572541974}
 --- !u!114 &1957831825
@@ -7944,8 +7995,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   kinectManager: {fileID: 572541974}
   leapServiceProvider: {fileID: 3621706319494380930}
-  enableKinect: 1
-  enableLeap: 1
+  enableKinect: 0
+  enableLeap: 0
 --- !u!114 &1957831826
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9799,7 +9850,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 308
+    VectorObservationSize: 331
     NumStackedVectorObservations: 1
     VectorActionSize: 04000000
     VectorActionDescriptions: []
@@ -9854,9 +9905,12 @@ MonoBehaviour:
   forwardAmount: 0.2
   navigationThreshold: 1.5
   randomPosition: 1
+  requireStop: 1
+  maxStopActions: 1000
   humanoidMovement: 0
-  useCategory: 1
-  useGesture: 1
+  useCategory: 0
+  useGesture: 0
+  useHand: 0
   logCustomMetrics: 1
   drawAgentPath: 0
   saveAgentPath: 0
@@ -10255,7 +10309,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &3621706319499855971
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10638,7 +10692,7 @@ Animator:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3896673190606542819}
   m_Enabled: 1
-  m_Avatar: {fileID: 9000000, guid: 7dc903443c5d92046a726d56e9ccef02, type: 3}
+  m_Avatar: {fileID: 0}
   m_Controller: {fileID: 0}
   m_CullingMode: 0
   m_UpdateMode: 0
@@ -14651,7 +14705,6 @@ MonoBehaviour:
   objSavePath: /Resources/NavObj/
   animSavePath: /Resources/Recordings/
   replayController: {fileID: 1957831828}
-  numObjects: 1
   playerIDs: 0100000002000000030000000400000005000000060000000700000008000000090000000a000000
   playerInfoCenter: {fileID: 1957831827}
   envSetup: {fileID: 5251254797086864951}
@@ -14661,6 +14714,7 @@ MonoBehaviour:
   newObjects: 0
   newRooms: 0
   objType: 0
+  objInstanceNum: 0
 --- !u!4 &8784226714799987532
 Transform:
   m_ObjectHideFlags: 0

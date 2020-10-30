@@ -32,7 +32,7 @@ public class TakeAnimSnapshot : MonoBehaviour
         sensor.AddObservation(PosToFloats(kinectGameObject.transform.position)); //
         sensor.AddObservation(PosToFloats(kinectHipT.transform.position));
         
-        // Track rotations for each joint (positions will not be tracked)
+        // Track rotations for each joint (positions will not be tracked since they won't change with time)
         foreach(Transform joint in observedKinectTs)
         {
             sensor.AddObservation(joint.rotation.eulerAngles/360f);
@@ -62,7 +62,7 @@ public class TakeAnimSnapshot : MonoBehaviour
     }
 
     // Track joints for the humanoid Kinect rig
-    private string[] trackedJoints = new string[]{
+    public static string[] trackedJoints = new string[]{
         "Hips",
         "LeftUpLeg","RightUpLeg",
         "LeftLeg","RightLeg",

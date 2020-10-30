@@ -21,6 +21,10 @@ public class AgentController : Agent
     public float navigationThreshold = 1.5f;
     [Tooltip("Randomly set agent position when it resets.")]
     public bool randomPosition = true;
+    [Tooltip("Require STOP action.")]
+    public bool requireStop = true;
+    [Tooltip("Maximum number of STOP actions an agent can issue within one episode.")][Range(10,1000)]
+    public int maxStopActions = 10;
     [Tooltip("Mimic human movement.")]
     public bool humanoidMovement = false;
 
@@ -28,6 +32,7 @@ public class AgentController : Agent
     [Header("Sensor Setting")]
     public bool useCategory = false; // category info
     public bool useGesture = false; // gesture
+    public bool useHand = false; // if hand will be used
 
     [Header("Log Setting")]
     public bool logCustomMetrics = false;
@@ -49,6 +54,7 @@ public class AgentController : Agent
     Animator m_Animator;
     float distanceToTarget = 1000f;
     bool contact = false; // if the agent is in contact with an object
+    bool stop = false; // if the agent has issued a stop action
 
     // Animaton capture
     [Header("Observation Capture")]
@@ -62,6 +68,7 @@ public class AgentController : Agent
     List<string> targetKeywords; // a list of target types
     NavObj.ObjCategory catSelected;
     NavObj.ObjType typeSelected;
+    int instanceNumSelected;
     int locIdxSelected;
     public NavObj.ObjType CurrentObjType
     {
@@ -86,9 +93,11 @@ public class AgentController : Agent
     // Renderers for target object
     Renderer[] targetObjRenderers;
 
-    // Agent performance measurement 
+    // Agent performance measurement
     int rotateActions = 0; // Rotations performed in one episode
-    int STEP_COUNT = 0;
+    int stopActions = 0; // Stop actions called in one episode
+    int STEP_COUNT = 0; // Number of training steps
+    int SUCCESS_EPISODE_COUNT = 0; // Number of successful episodes
     bool EPISODE_DONE = false; // if the episode is completed or not
     bool EPISODE_SUCCESS = false; // if the episode is a success or not
     StatsRecorder statsRecorder;
@@ -164,10 +173,10 @@ public class AgentController : Agent
         m_rBody.angularVelocity = Vector3.zero;
 
         // Quit application after 1000 episodes for evaluation
-        if(isInference&&CompletedEpisodes>1000)
-        {
-            EditorApplication.isPlaying=false;
-        }
+        // if(isInference&&CompletedEpisodes>100)
+        // {
+        //     EditorApplication.isPlaying=false;
+        // }
 
         if(CompletedEpisodes>0)
         {
@@ -204,6 +213,7 @@ public class AgentController : Agent
                 }
 
                 LogDTS(targetObj);
+                LogStopActionMetrics();
             }
         }
 
@@ -228,32 +238,48 @@ public class AgentController : Agent
         startingFacingNorm = transform.forward;
         startingRotation = transform.rotation;
 
-        // Reset rotation movement counter
+        // Reset agent counter
         rotateActions = 0;
+        stopActions = 0;
 
         // Reset performance measurements
         STEP_COUNT = 0;
         EPISODE_DONE = false;
         EPISODE_SUCCESS = false;
+
+        // Reset agent states
         distanceToTarget = 1000f;
+        contact = false;
+        stop = false;
     }
 
     public override void CollectObservations(VectorSensor sensor)
     {
+        // if(useCategory)
+        // {
+        //     sensor.AddOneHotObservation((int)typeSelected, targetKeywords.Count);
+        // }
+        // else
+        // {
+        //     sensor.AddObservation(new float[targetKeywords.Count]);
+        // }
+
+        // Use object instance number as the object label
         if(useCategory)
         {
-            sensor.AddOneHotObservation((int)typeSelected, targetKeywords.Count);
+            sensor.AddOneHotObservation(instanceNumSelected, 33);
         }
         else
         {
-            sensor.AddObservation(new float[targetKeywords.Count]);
+            sensor.AddObservation(new float[33]);
         }
 
         // Add Kinect observations
         if(useGesture)
         {
-            animTaker.TakeKinectSnapshot(sensor);
-            animTaker.TakeLeapSnapshot(sensor);
+            animTaker.TakeKinectSnapshot(sensor); // 148
+            if(useHand) animTaker.TakeLeapSnapshot(sensor); // 150
+            else sensor.AddObservation(new float[150]);
         }
         else 
         {
@@ -272,14 +298,14 @@ public class AgentController : Agent
 
             switch(action)
             {
-                case 1: // Move forward
+                case 0: // Move forward
                     m_Animator.SetFloat("Forward", 0.2f);
                     transform.Translate(transform.forward * forwardAmount, Space.World);
                     break;
-                case 2: // Turn left
+                case 1: // Turn left
                     transform.Rotate(0, turnAmount, 0);
                     break;
-                case 3: // Turn right
+                case 2: // Turn right
                     transform.Rotate(0, -turnAmount, 0);
                     break;
             }
@@ -288,15 +314,21 @@ public class AgentController : Agent
         {
             switch(action)
             {
-                case 1: // Move forward
+                case 0: // Move forward
                     transform.Translate(transform.forward * forwardAmount, Space.World);
                     break;
-                case 2: // Turn right
+                case 1: // Turn right
                     transform.Rotate(0, turnAmount, 0);
                     break;
-                case 3: // Turn left
+                case 2: // Turn left
                     // transform.Rotate(0, -turnAmount * Time.deltaTime, 0);
                     transform.Rotate(0, -turnAmount, 0);
+                    break;
+                case 3: // STOP
+                    if(requireStop)
+                    {
+                        stop = true;
+                    }
                     break;
             }
         }
@@ -343,19 +375,50 @@ public class AgentController : Agent
         bool done = false;
 
         // Uniform time penalty
-        AddReward(-1f/MaxStep);
+        // AddReward(-1f/MaxStep);
+        AddReward(-0.001f);
 
         // Collision penalty
         if (contact)
         {
-            AddReward(-5f/MaxStep);
+            // AddReward(-5f/MaxStep);
+            AddReward(-0.005f);
         }
 
-        if(distanceToTarget<navigationThreshold && isVisibleFromCam(rgbCam, targetObj))
+
+        if(requireStop)
         {
-            SetReward(1f);
-            done = true;
-            EPISODE_SUCCESS = true;
+            if(stop)
+            {
+                stopActions++;
+                if(distanceToTarget<navigationThreshold && isVisibleFromCam(rgbCam, targetObj))
+                {
+                    AddReward(1f);
+                    done = true;
+                    EPISODE_SUCCESS = true;
+                }
+                // else if(stopActions>maxStopActions)
+                // {
+                //     AddReward(-0.1f);
+                //     done = true;
+                // }
+                else
+                {
+                    // AddReward(-2f/MaxStep);
+                    AddReward(-0.1f);
+                    // done = true;
+                }
+                stop = false;
+            }
+        }
+        else
+        {
+            if(distanceToTarget<navigationThreshold && isVisibleFromCam(rgbCam, targetObj))
+            {
+                SetReward(1f);
+                done = true;
+                EPISODE_SUCCESS = true;
+            }
         }
         return done;
     }
@@ -377,7 +440,8 @@ public class AgentController : Agent
         {
             commHub.SetupReplay(catSelected, locIdxSelected);
         }
-        typeSelected = commHub.objType;
+        // typeSelected = commHub.objType;
+        instanceNumSelected = commHub.objInstanceNum;
         targetObjRenderers = targetObj.GetComponentsInChildren<Renderer>();
     }
 
@@ -429,7 +493,7 @@ public class AgentController : Agent
     {
         Vector3 pt1 = positionOnFloor + new Vector3(0,m_collider.radius,0); // The center of the sphere at the start of the capsule
         Vector3 pt2 = positionOnFloor - new Vector3(0,m_collider.radius,0) + new Vector3(0,m_collider.height,0); // The center of the sphere at the end of the capsule
-        Collider[] colliders = Physics.OverlapCapsule(pt1, pt2, m_collider.radius).Where(col => col.CompareTag("Environment")||col.CompareTag("Environment")).ToArray();
+        Collider[] colliders = Physics.OverlapCapsule(pt1, pt2, m_collider.radius).Where(col => col.CompareTag("Environment")||col.CompareTag("Structure")).ToArray();
         return colliders.Length == 0 && (DistanceToTarget(positionOnFloor, targetObj) >= (navigationThreshold+1f)); // make sure it is at least 1m away from the target object
     }
     
@@ -482,6 +546,31 @@ public class AgentController : Agent
     {
         statsRecorder.Add("Metrics/Success Rate", sr);
         statsRecorder.Add("Metrics/Success Rate Weighted by Min Steps", sms);
+
+        // if(requireStop)
+        // {
+        //     statsRecorder.Add("Metrics/SR on First Stop", stopActions<2? sr:0f);
+        //     statsRecorder.Add("Metrics/SMS on First Stop", stopActions<2? sms:0f);
+        // }
+    }
+
+    // Log metrics related with stop actions
+    private void LogStopActionMetrics()
+    {
+        statsRecorder.Add("Success/Number of Stops", stopActions);
+        // statsRecorder.Add("Metrics/SR on First Stop", numStops<2? sr:0f);
+        // statsRecorder.Add("Metrics/SMS on First Stop", numStops<2? sr:0f);
+        // statsRecorder.Add("Metrics/DTS on First Stop", numStops<2? sr:0f);
+
+        // Log SR less than 3 stops
+
+        // Log SR less than 5 stops
+
+        // Log SR less than 10 stops
+
+        // Log SR less than 15 stops
+
+        // Log SR less than 20 stops
     }
 
     // Calculate distance to success (Chaplot et al., 2020) (DTS), which is the distance of the agent from the success threshold boundary when the episode ends
@@ -490,6 +579,11 @@ public class AgentController : Agent
     {
         float dts = Mathf.Max(0f, DistanceToTarget(transform.position, target) - navigationThreshold);
         statsRecorder.Add("Metrics/Distance to Success", dts);
+
+        // if(requireStop)
+        // {
+        //     statsRecorder.Add("Metrics/DTS on First Stop", stopActions<2? dts:0f);
+        // }
     }
 
     ///=========================================================================
