@@ -98,6 +98,9 @@ public class AgentController : Agent
     int stopActions = 0; // Stop actions called in one episode
     int STEP_COUNT = 0; // Number of training steps
     int SUCCESS_EPISODE_COUNT = 0; // Number of successful episodes
+    float SMS_TOT = 0f; // Total number of SMS
+    int SUCCESS_3STOPS =0;  int SUCCESS_5STOPS =0; int SUCCESS_10STOPS =0; int SUCCESS_15STOPS =0; int SUCCESS_20STOPS =0; // Number of successful episodes less than the amount of stops
+    float SMS_3STOPS =0f;  float SMS_5STOPS =0f; float SMS_10STOPS =0f; float SMS_15STOPS =0f; float SMS_20STOPS =0f; // SMS less than the amount of stops
     bool EPISODE_DONE = false; // if the episode is completed or not
     bool EPISODE_SUCCESS = false; // if the episode is a success or not
     StatsRecorder statsRecorder;
@@ -203,17 +206,10 @@ public class AgentController : Agent
 
             if(logCustomMetrics)
             {
-                if(EPISODE_SUCCESS)
-                {
-                    LogSuccessRate(1f, SuccessRateSMS(STEP_COUNT, targetObj, startingPosition, startingFacingNorm));
-                }
-                else
-                {
-                    LogSuccessRate(0f, 0f);
-                }
-
+                UpdateSuccessInfo(EPISODE_SUCCESS, stopActions);
+                LogSuccessRate();
                 LogDTS(targetObj);
-                LogStopActionMetrics();
+                LogStopActionMetrics(stopActions);
             }
         }
 
@@ -277,13 +273,15 @@ public class AgentController : Agent
         // Add Kinect observations
         if(useGesture)
         {
-            animTaker.TakeKinectSnapshot(sensor); // 148
-            if(useHand) animTaker.TakeLeapSnapshot(sensor); // 150
-            else sensor.AddObservation(new float[150]);
+            animTaker.TakeKinectSnapshot(sensor); // 58
+            if(useHand) animTaker.TakeLeapSnapshot(sensor); // 108
+            // else sensor.AddObservation(new float[150]);
+            else sensor.AddObservation(new float[108]);
         }
         else 
         {
-            sensor.AddObservation(new float[298]);
+            // sensor.AddObservation(new float[298]);
+            sensor.AddObservation(new float[166]);
         }
     }
     
@@ -333,6 +331,8 @@ public class AgentController : Agent
             }
         }
 
+        STEP_COUNT++;
+
         // Get current distance to the target
         distanceToTarget = DistanceToTarget(transform.position, targetObj);
         // Calculate rewards and check if the episode is completed
@@ -343,8 +343,6 @@ public class AgentController : Agent
             if(rotateActions>180f/turnAmount) {AddReward(-0.005f * (rotateActions - 180/turnAmount));} // excessive rotation penalty
             EndEpisode();
         }
-
-        STEP_COUNT++;
     }
 
     public override void Heuristic(float[] actionsOut)
@@ -405,7 +403,7 @@ public class AgentController : Agent
                 else
                 {
                     // AddReward(-2f/MaxStep);
-                    AddReward(-0.1f);
+                    AddReward(-Academy.Instance.EnvironmentParameters.GetWithDefault("wrong_stop_penalty", 0.05f));
                     // done = true;
                 }
                 stop = false;
@@ -542,35 +540,49 @@ public class AgentController : Agent
         return (float)minSteps/Mathf.Max(minSteps, totSteps);
     }
 
-    private void LogSuccessRate(float sr, float sms)
+    private void UpdateSuccessInfo(bool success, int numStops)
     {
-        statsRecorder.Add("Metrics/Success Rate", sr);
-        statsRecorder.Add("Metrics/Success Rate Weighted by Min Steps", sms);
+        if(success)
+        {
+            float sms = SuccessRateSMS(STEP_COUNT, targetObj, startingPosition, startingFacingNorm);
+            SUCCESS_EPISODE_COUNT += 1;
+            SMS_TOT += sms;
 
-        // if(requireStop)
-        // {
-        //     statsRecorder.Add("Metrics/SR on First Stop", stopActions<2? sr:0f);
-        //     statsRecorder.Add("Metrics/SMS on First Stop", stopActions<2? sms:0f);
-        // }
+            if(numStops<=3) {SUCCESS_3STOPS += 1; SMS_3STOPS += sms;}
+            if(numStops<=5) {SUCCESS_5STOPS += 1; SMS_5STOPS += sms;}
+            if(numStops<=10) {SUCCESS_10STOPS += 1; SMS_10STOPS += sms;}
+            if(numStops<=15) {SUCCESS_15STOPS += 1; SMS_15STOPS += sms;}
+            if(numStops<=20) {SUCCESS_20STOPS += 1; SMS_20STOPS += sms;}
+        }
+    }
+
+    // Log SR and SMS
+    private void LogSuccessRate()
+    {
+        statsRecorder.Add("Metrics/Success Rate", (float)SUCCESS_EPISODE_COUNT/CompletedEpisodes);
+        statsRecorder.Add("Metrics/Success Rate Weighted by Min Steps", SMS_TOT/CompletedEpisodes);
     }
 
     // Log metrics related with stop actions
-    private void LogStopActionMetrics()
+    private void LogStopActionMetrics(int numStops)
     {
-        statsRecorder.Add("Success/Number of Stops", stopActions);
-        // statsRecorder.Add("Metrics/SR on First Stop", numStops<2? sr:0f);
-        // statsRecorder.Add("Metrics/SMS on First Stop", numStops<2? sr:0f);
-        // statsRecorder.Add("Metrics/DTS on First Stop", numStops<2? sr:0f);
+        statsRecorder.Add("STOPS/Number of Stops", numStops);
 
         // Log SR less than 3 stops
-
+        statsRecorder.Add("STOPS/SR/SR on 3 Stops", (float)SUCCESS_3STOPS/CompletedEpisodes);
+        statsRecorder.Add("STOPS/SMS/SMS on 3 Stops", SMS_3STOPS/CompletedEpisodes);
         // Log SR less than 5 stops
-
+        statsRecorder.Add("STOPS/SR/SR on 5 Stops", (float)SUCCESS_5STOPS/CompletedEpisodes);
+        statsRecorder.Add("STOPS/SMS/SMS on 5 Stops", SMS_5STOPS/CompletedEpisodes);
         // Log SR less than 10 stops
-
+        statsRecorder.Add("STOPS/SR/SR on 10 Stops", (float)SUCCESS_10STOPS/CompletedEpisodes);
+        statsRecorder.Add("STOPS/SMS/SMS on 10 Stops", SMS_10STOPS/CompletedEpisodes);
         // Log SR less than 15 stops
-
+        statsRecorder.Add("STOPS/SR/SR on 15 Stops", (float)SUCCESS_15STOPS/CompletedEpisodes);
+        statsRecorder.Add("STOPS/SMS/SMS on 15 Stops", SMS_15STOPS/CompletedEpisodes);
         // Log SR less than 20 stops
+        statsRecorder.Add("STOPS/SR/SR on 20 Stops", (float)SUCCESS_20STOPS/CompletedEpisodes);
+        statsRecorder.Add("STOPS/SMS/SMS on 20 Stops", SMS_20STOPS/CompletedEpisodes);
     }
 
     // Calculate distance to success (Chaplot et al., 2020) (DTS), which is the distance of the agent from the success threshold boundary when the episode ends

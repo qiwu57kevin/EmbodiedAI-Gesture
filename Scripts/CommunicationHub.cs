@@ -123,7 +123,7 @@ public class CommunicationHub: MonoBehaviour
     public void SetupRoom()
     {
         // int roomNum = roomRootT.childCount;
-        int roomNumSelected = isTraining&&newRooms? Random.Range(7,11):Random.Range(0,7);
+        int roomNumSelected = (!isTraining)&&newRooms? Random.Range(7,11):Random.Range(0,7);
         for(int i=0;i<11;i++)
         {
             roomRootT.GetChild(i).gameObject.SetActive(i==roomNumSelected? true:false);

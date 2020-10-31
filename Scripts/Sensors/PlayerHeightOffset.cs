@@ -40,6 +40,18 @@ public class PlayerHeightOffset : MonoBehaviour
         playerHeightList.Add(new PlayerInfo(playerName, playerHeight));
     }
 
+    public float GetPlayerHeight(string playername)
+    {
+        foreach(PlayerInfo info in playerHeightList)
+        {
+            if(info.name == playername)
+            {
+                return info.height;
+            }
+        }
+        return 0f;
+    }
+
     private void AdjustKinect(float height, Transform Kinect)
     {
         float scale = playerHeight/defaultHeight;
