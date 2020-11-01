@@ -35,9 +35,10 @@ public class TakeAnimSnapshot : MonoBehaviour
         // Track rotations for each joint (positions will not be tracked since they won't change with time)
         foreach(Transform joint in observedKinectTs)
         {
-            sensor.AddObservation(joint.localRotation.eulerAngles/360f);
+            // sensor.AddObservation(joint.localRotation.eulerAngles/360f);
+            sensor.AddObservation(joint.localRotation);
         }
-        // in total 55
+        // in total 58+17=75
     }
 
     public void TakeLeapSnapshot(VectorSensor sensor)
@@ -50,11 +51,12 @@ public class TakeAnimSnapshot : MonoBehaviour
                 sensor.AddObservation(PosToFloats(leapT.position));
                 if(!ignoredLeapRotations.Contains(leapT.name))
                 {
-                    sensor.AddObservation(leapT.rotation.eulerAngles/360f);
+                    // sensor.AddObservation(leapT.rotation.eulerAngles/360f);
+                    sensor.AddObservation(leapT.rotation);
                 }
             }
         }
-        // in total 108
+        // in total 124
     }
 
     private List<float> PosToFloats(Vector3 vec)

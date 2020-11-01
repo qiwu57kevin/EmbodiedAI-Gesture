@@ -31,40 +31,40 @@ behaviors:
     summary_freq: 2000
     threaded: true
 
-environment_parameters:
-  wrong_stop_penalty:
-    curriculum:
-      - name: wrong_stop_penalty_0.05 # The '-' is important as this is a list
-        completion_criteria:
-          measure: progress
-          behavior: Gesture
-          signal_smoothing: true
-          min_lesson_length: 10
-          threshold: 0.2
-        value: 0.05
-      - name: wrong_stop_penalty_0.1 # The '-' is important as this is a list
-        completion_criteria:
-          measure: progress
-          behavior: Gesture
-          signal_smoothing: true
-          min_lesson_length: 10
-          threshold: 0.4
-        value: 0.1
-      - name: wrong_stop_penalty_0.15 # The '-' is important as this is a list
-        completion_criteria:
-          measure: progress
-          behavior: Gesture
-          signal_smoothing: true
-          min_lesson_length: 10
-          threshold: 0.6
-        value: 0.15
-      - name: wrong_stop_penalty_0.20 # The '-' is important as this is a list
-        completion_criteria:
-          measure: progress
-          behavior: Gesture
-          signal_smoothing: true
-          min_lesson_length: 10
-          threshold: 0.8
-        value: 0.20
-      - name: wrong_stop_penalty_0.25
-        value: 0.25
+# environment_parameters:
+#   wrong_stop_penalty:
+#     curriculum:
+#       - name: wrong_stop_penalty_0.05 # The '-' is important as this is a list
+#         completion_criteria:
+#           measure: progress
+#           behavior: Gesture
+#           signal_smoothing: true
+#           min_lesson_length: 10
+#           threshold: 0.2
+#         value: 0.05
+#       - name: wrong_stop_penalty_0.1 # The '-' is important as this is a list
+#         completion_criteria:
+#           measure: progress
+#           behavior: Gesture
+#           signal_smoothing: true
+#           min_lesson_length: 10
+#           threshold: 0.4
+#         value: 0.1
+#       - name: wrong_stop_penalty_0.15 # The '-' is important as this is a list
+#         completion_criteria:
+#           measure: progress
+#           behavior: Gesture
+#           signal_smoothing: true
+#           min_lesson_length: 10
+#           threshold: 0.6
+#         value: 0.15
+#       - name: wrong_stop_penalty_0.20 # The '-' is important as this is a list
+#         completion_criteria:
+#           measure: progress
+#           behavior: Gesture
+#           signal_smoothing: true
+#           min_lesson_length: 10
+#           threshold: 0.8
+#         value: 0.20
+#       - name: wrong_stop_penalty_0.25
+#         value: 0.25

@@ -403,7 +403,8 @@ public class AgentController : Agent
                 else
                 {
                     // AddReward(-2f/MaxStep);
-                    AddReward(-Academy.Instance.EnvironmentParameters.GetWithDefault("wrong_stop_penalty", 0.05f));
+                    // AddReward(-Academy.Instance.EnvironmentParameters.GetWithDefault("wrong_stop_penalty", 0.05f));
+                    AddReward(-0.1f);
                     // done = true;
                 }
                 stop = false;

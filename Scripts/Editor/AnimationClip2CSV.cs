@@ -109,42 +109,13 @@ public class AnimationClip2CSV : EditorWindow
             var worker = WorkerFactory.CreateWorker(WorkerFactory.Type.Compute, model);
 
             // Pass the input to the model
-            Tensor input = new Tensor(1,3, new float[3]{m_position.x,m_position.y,m_position.z}); // create a tensor 
+            Tensor input = new Tensor(1,10, new float[10]{m_position.x,m_position.y,m_position.z, 0f, 0f, 1.25f, 0f, 0.5f, 0f, 1.8f}); // create a tensor 
             // Debug.Log(input[0]);
             var output = worker.Execute(input).PeekOutput();
 
             // From the example Leap animation clip, find all transforms that the output should match with
             // and assign each output to either position, rotation, or scale of the transform
-            var bindings = AnimationUtility.GetCurveBindings(exampleLeapClip);
-            Transform currT = null; // Current transform for this binding
-            int i = 0;
-            while(i<bindings.Length)
-            {
-                currT = GameObject.Find($"RiggedHandRight/{bindings[i].path}").transform;
-                switch(bindings[i].propertyName)
-                {
-                    case "m_LocalPosition.x":
-                        // Vector3 newvector3 = new Vector3(2*output[i],2*output[i+1],2*output[i+2]);
-                        // currT.localPosition = newvector3;
-                        i = i+3;
-                        break;
-                    case "m_LocalRotation.x": 
-                        // if(i<bindings.Length && bindings[i].path == "R_Wrist/R_Palm" && bindings[i].propertyName.StartsWith("m_LocalRotation"))
-                        // {
-                        //     Debug.Log(i);
-                        //     Debug.Log(bindings[i].path + bindings[i].propertyName + ": " + output[i] + "," + output[i+1] + "," + output[i+2] + "," + output[i+3]);
-                        // }
-                        Quaternion newquarternion = new Quaternion(output[i],output[i+1],output[i+2],output[i+3]);
-                        currT.localRotation = newquarternion;
-                        // Debug.Log(GameObject.Find("R_Palm").transform.localRotation);
-                        i = i+4;
-                        break;
-                    case "m_LocalScale.x":
-                        i = i+3;
-                        break;
-                }
-            }
-
+            InferenceFromModel(false, output);
             // Debug.Log(i);
             // Debug.Log(GameObject.Find("R_Palm").transform.localRotation);
         }
@@ -155,7 +126,7 @@ public class AnimationClip2CSV : EditorWindow
         var bindings = AnimationUtility.GetCurveBindings(clip);
         int numBindings = bindings.Length;
         int i = 0;
-        Debug.Log(bindings[0].propertyName);
+        // Debug.Log(bindings[0].propertyName);
         while(i < numBindings)
         {
             if(isKinect)
@@ -173,6 +144,7 @@ public class AnimationClip2CSV : EditorWindow
                             sw.Write(bindings[i].path + "/" + bindings[i].propertyName.Split('.')[0] + ".x" + ",");
                             sw.Write(bindings[i].path + "/" + bindings[i].propertyName.Split('.')[0] + ".y" + ",");
                             sw.Write(bindings[i].path + "/" + bindings[i].propertyName.Split('.')[0] + ".z" + ",");
+                            sw.Write(bindings[i].path + "/" + bindings[i].propertyName.Split('.')[0] + ".w" + ",");
                         }
                         i += 4;
                         break;
@@ -196,6 +168,7 @@ public class AnimationClip2CSV : EditorWindow
                             sw.Write(bindings[i].path + "/" + bindings[i].propertyName.Split('.')[0] + ".x" + ",");
                             sw.Write(bindings[i].path + "/" + bindings[i].propertyName.Split('.')[0] + ".y" + ",");
                             sw.Write(bindings[i].path + "/" + bindings[i].propertyName.Split('.')[0] + ".z" + ",");
+                            sw.Write(bindings[i].path + "/" + bindings[i].propertyName.Split('.')[0] + ".w" + ",");
                         }
                         i += 4;
                         break;
@@ -250,10 +223,11 @@ public class AnimationClip2CSV : EditorWindow
                         if(trackedKinectJoints.Contains(bindings[i].path.Split('/').Last()))
                         {
                             Quaternion currQ = new Quaternion(AnimationUtility.GetEditorCurve(clip, bindings[i]).keys[0].value, AnimationUtility.GetEditorCurve(clip, bindings[i+1]).keys[0].value, AnimationUtility.GetEditorCurve(clip, bindings[i+2]).keys[0].value, AnimationUtility.GetEditorCurve(clip, bindings[i+3]).keys[0].value);
-                            Vector3 currAngle = currQ.eulerAngles;
-                            line.Append(currAngle.x/360); line.Append(",");
-                            line.Append(currAngle.y/360); line.Append(",");
-                            line.Append(currAngle.z/360); line.Append(",");
+                            // Vector3 currAngle = currQ.eulerAngles;
+                            line.Append(currQ.x); line.Append(",");
+                            line.Append(currQ.y); line.Append(",");
+                            line.Append(currQ.z); line.Append(",");
+                            line.Append(currQ.w); line.Append(",");
                         }
                         i += 4;
                         break;
@@ -284,10 +258,11 @@ public class AnimationClip2CSV : EditorWindow
                         if(!ignoredLeapJoints.Contains(bindings[i].path.Split('/').Last()) && !ignoredLeapRotations.Contains(bindings[i].path.Split('/').Last()))
                         {
                             Quaternion currQ = new Quaternion(AnimationUtility.GetEditorCurve(clip, bindings[i]).keys[0].value, AnimationUtility.GetEditorCurve(clip, bindings[i+1]).keys[0].value, AnimationUtility.GetEditorCurve(clip, bindings[i+2]).keys[0].value, AnimationUtility.GetEditorCurve(clip, bindings[i+3]).keys[0].value);
-                            Vector3 currAngle = currQ.eulerAngles;
-                            line.Append(currAngle.x/360); line.Append(",");
-                            line.Append(currAngle.y/360); line.Append(",");
-                            line.Append(currAngle.z/360); line.Append(",");
+                            // Vector3 currAngle = currQ.eulerAngles;
+                            line.Append(currQ.x); line.Append(",");
+                            line.Append(currQ.y); line.Append(",");
+                            line.Append(currQ.z); line.Append(",");
+                            line.Append(currQ.w); line.Append(",");
                         }
                         i += 4;
                         break;
@@ -308,38 +283,62 @@ public class AnimationClip2CSV : EditorWindow
 
     private void InferenceFromModel(bool isKinect, Tensor output)
     {
-        var bindings = AnimationUtility.GetCurveBindings(exampleKinectClip);
+        var bindings = isKinect? AnimationUtility.GetCurveBindings(exampleKinectClip):AnimationUtility.GetCurveBindings(exampleLeapClip);
         Transform currT = null; // Current transform for this binding
         int i = 0;
         int j = 0; // output index
         while(i<bindings.Length)
         {
-            currT = GameObject.Find($"KinectAvatar/{bindings[i].path}").transform;
-            switch(bindings[i].propertyName)
+            if(isKinect)
             {
-                case "m_LocalPosition.x": 
-                    if(bindings[i].path == "Reference/Hips")
-                    {
-                        currT.localPosition = new Vector3(output[j],output[j+1],output[j+2]);
-                        j += 3;
-                    }
-                    i += 3; break;
-                case "m_LocalScale.x": 
-                    i += 3; break;
-                case "m_LocalRotation.x": 
-                    // currT.localRotation = new Quaternion(output[i],currT.localRotation.y,currT.localRotation.z,currT.localRotation.w);
-                    if(trackedKinectJoints.Contains(bindings[i].path.Split('/').Last()))
-                    {
-                        currT.eulerAngles = new Vector3(output[j]*360,output[j+1]*360,output[j+2]*360);
-                        j += 3;
-                    }
-                    i = i+4;
-                    break;
-                // case "m_LocalRotation.y": currT.localRotation = new Quaternion(currT.localRotation.x,output[i],currT.localRotation.z,currT.localRotation.w); break;
-                // case "m_LocalRotation.z": currT.localRotation = new Quaternion(currT.localRotation.x,currT.localRotation.y,output[i],currT.localRotation.w); break;
-                // case "m_LocalRotation.w": currT.localRotation = new Quaternion(currT.localRotation.x,currT.localRotation.y,currT.localRotation.z,output[i]); break;
+                currT = GameObject.Find($"KinectAvatar/{bindings[i].path}").transform;
+                switch(bindings[i].propertyName)
+                {
+                    case "m_LocalPosition.x": 
+                        if(bindings[i].path == "Reference/Hips")
+                        {
+                            currT.localPosition = new Vector3(output[j],output[j+1],output[j+2]);
+                            j += 3;
+                        }
+                        i += 3; break;
+                    case "m_LocalScale.x": 
+                        i += 3; break;
+                    case "m_LocalRotation.x": 
+                        // currT.localRotation = new Quaternion(output[i],currT.localRotation.y,currT.localRotation.z,currT.localRotation.w);
+                        if(trackedKinectJoints.Contains(bindings[i].path.Split('/').Last()))
+                        {
+                            currT.localRotation = new Quaternion(output[j],output[j+1],output[j+2],output[j+3]);
+                            j += 4;
+                        }
+                        i = i+4;
+                        break;
+                }
             }
-
+            else
+            {
+                currT = GameObject.Find($"RiggedHandRight/{bindings[i].path}").transform;
+                switch(bindings[i].propertyName)
+                {
+                    case "m_LocalPosition.x": 
+                        if(!ignoredLeapJoints.Contains(bindings[i].path.Split('/').Last()))
+                        {
+                            currT.localPosition = new Vector3(output[j],output[j+1],output[j+2]);
+                            j += 3;
+                        }
+                        i += 3; break;
+                    case "m_LocalScale.x": 
+                        i += 3; break;
+                    case "m_LocalRotation.x": 
+                        // currT.localRotation = new Quaternion(output[i],currT.localRotation.y,currT.localRotation.z,currT.localRotation.w);
+                        if(!ignoredLeapJoints.Contains(bindings[i].path.Split('/').Last()) && !ignoredLeapRotations.Contains(bindings[i].path.Split('/').Last()))
+                        {
+                            currT.localRotation = new Quaternion(output[j],output[j+1],output[j+2],output[j+3]);
+                            j += 4;
+                        }
+                        i = i+4;
+                        break;
+                }
+            }
             // Debug.Log($"{i+1}: "+output[i]);
             // if(i<bindings.Length && bindings[i].path.Split('/').Last() == "Hips" && bindings[i].propertyName.StartsWith("m_LocalRotation"))
             // {
