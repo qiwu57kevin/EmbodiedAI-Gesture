@@ -89,7 +89,7 @@ public class AgentController : Agent
     // Selected object list and the target object
     [Header("Objects Selected")]
     [SerializeField] Transform[] objList;
-    [SerializeField] Transform targetObj;
+    public Transform targetObj;
     // Renderers for target object
     Renderer[] targetObjRenderers;
 
@@ -183,12 +183,6 @@ public class AgentController : Agent
 
         if(CompletedEpisodes>0)
         {
-            // Destroy objects in previous episode
-            foreach(GameObject obj in objList.Select(objT => objT.gameObject))
-            {
-                Destroy(obj);
-            }
-
             // Save path if required (only in inference)
             if(drawAgentPath)
             {
@@ -210,6 +204,15 @@ public class AgentController : Agent
                 LogSuccessRate();
                 LogDTS(targetObj);
                 LogStopActionMetrics(stopActions);
+            }
+
+            // Destroy objects in previous episode
+            if(envSetup.autoSetTarget)
+            {
+                foreach(GameObject obj in objList.Select(objT => objT.gameObject))
+                {
+                    Destroy(obj);
+                }
             }
         }
 
@@ -251,6 +254,8 @@ public class AgentController : Agent
 
     public override void CollectObservations(VectorSensor sensor)
     {
+        sensor.AddObservation(transform.position);
+
         // if(useCategory)
         // {
         //     sensor.AddOneHotObservation((int)typeSelected, targetKeywords.Count);
@@ -273,15 +278,15 @@ public class AgentController : Agent
         // Add Kinect observations
         if(useGesture)
         {
-            animTaker.TakeKinectSnapshot(sensor); // 58
-            if(useHand) animTaker.TakeLeapSnapshot(sensor); // 108
+            animTaker.TakeKinectSnapshot(sensor); // 75
+            if(useHand) animTaker.TakeLeapSnapshot(sensor); // 124
             // else sensor.AddObservation(new float[150]);
-            else sensor.AddObservation(new float[108]);
+            else sensor.AddObservation(new float[124]);
         }
         else 
         {
             // sensor.AddObservation(new float[298]);
-            sensor.AddObservation(new float[166]);
+            sensor.AddObservation(new float[199]);
         }
     }
     

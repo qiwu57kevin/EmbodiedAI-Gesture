@@ -58,6 +58,8 @@ public class CommunicationHub: MonoBehaviour
     private int[] objNums = new int[3];
     // List to save all selected navigable objects
     private NavObj[] selectedNavObjs;
+    private AnimationClip selectedClip;
+    private Transform[] _objList;
     // Object location indices for target and environment objects
     private int[] objLocIdx;
 
@@ -111,11 +113,12 @@ public class CommunicationHub: MonoBehaviour
         int playerID = playerIDs[!isTraining&&newGestures? Random.Range(6,10):Random.Range(0,6)]; // select a random player ID
         // Scale Kinect avatar according to playerID
         float scale = playerID2Height[playerID]/1.75f;
-        GameObject.Find("KinectAvatar").transform.localScale = new Vector3(scale, scale, scale);
+        if(envSetup.autoSetTarget||agentController.CompletedEpisodes==0) GameObject.Find("KinectAvatar").transform.localScale = new Vector3(scale, scale, scale);
 
         for(int i=0;i<deviceList.Length;i++)
         {
-            replayController.PlayAnimClipInCtrl(animCtrls[i],SelectAnimClip(deviceList[i], playerID, m_objCat, m_objLocIdx));
+            if(envSetup.autoSetTarget||agentController.CompletedEpisodes==0) replayController.PlayAnimClipInCtrl(animCtrls[i],SelectAnimClip(deviceList[i], playerID, m_objCat, m_objLocIdx));
+            else replayController.PlayAnimClipInCtrl(animCtrls[i],selectedClip);
         }
     }
 
@@ -239,8 +242,7 @@ public class CommunicationHub: MonoBehaviour
                     selectedNavObjs[i] = OW_list[Random.Range(0,OW_list.Length)];
                 }
             }
-
-            return selectedNavObjs;
+            // return selectedNavObjs;
         }
         return selectedNavObjs;
     }
@@ -252,25 +254,24 @@ public class CommunicationHub: MonoBehaviour
                                     anim.name.Split('_')[1]==playerID.ToString()&&
                                     anim.name.Split('_')[2]==m_objCat.ToString()&&
                                     anim.name.Split('_')[3]==m_objLocIdx.ToString()).ToArray();
-        AnimationClip selectedClip = qualifiedList[Random.Range(0,qualifiedList.Length)];
+        selectedClip = qualifiedList[Random.Range(0,qualifiedList.Length)];
         return selectedClip;
     }
 
     // Initialize selected objects in the given location. Return a list of instantiated Gameobjects
     private Transform[] InitObj(NavObj[] m_objList, NavObj.ObjCategory m_ObjCat, int m_objLocIdx)
     {
-        // Create a new transform array
-        Transform[] _objList = new Transform[m_objList.Length];
-        // Create a new object location indices
-        objLocIdx = new int[_objList.Length];
-
-        // Instantiate the target object
-        _objList[0] = InstantiateObj(m_objList[0].objInstance, m_ObjCat, m_objLocIdx).transform;
-        objLocIdx[0] = m_objLocIdx;
-
         // Instantiate other objects in the object list if needed
         if(m_objList.Length!=1&&(envSetup.autoSetTarget||agentController.CompletedEpisodes==0))
         {
+            // Create a new transform array
+            _objList = new Transform[m_objList.Length];
+            // Create a new object location indices
+            objLocIdx = new int[_objList.Length];
+
+            // Instantiate the target object
+            _objList[0] = InstantiateObj(m_objList[0].objInstance, m_ObjCat, m_objLocIdx).transform;
+            objLocIdx[0] = m_objLocIdx;
             // _fakeTargetsLocIdx = Enumerable.Range(0,10).Where(num => num!=m_objLocIdx).OrderBy(num => Guid.NewGuid()).Take(m_objList.Length-1).ToArray();
 
             // Debug.Log(objLocIdx.Length);
