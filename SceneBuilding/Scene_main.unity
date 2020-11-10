@@ -8216,6 +8216,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 562f90795e1681449827721c3f0d61cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  embodiedAgent: {fileID: 1306097176030968200}
   kinectGameObject: {fileID: 3896673190606542819}
   kinectHipT: {fileID: 3896673190606506953}
   leapLeftRootT: {fileID: 553525507250530643}
@@ -10040,14 +10041,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 235
+    VectorObservationSize: 278
     NumStackedVectorObservations: 1
     VectorActionSize: 04000000
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
-  m_Model: {fileID: 5022602860645237092, guid: 429887df0cb912c4e9417b82a3a34373, type: 3}
+  m_Model: {fileID: 0}
   m_InferenceDevice: 1
-  m_BehaviorType: 2
+  m_BehaviorType: 0
   m_BehaviorName: Gesture
   TeamId: 0
   m_UseChildSensors: 1
@@ -10100,8 +10101,9 @@ MonoBehaviour:
   maxStopActions: 1000
   humanoidMovement: 0
   useCategory: 1
-  useGesture: 1
+  useBody: 1
   useHand: 1
+  useHumanIntervention: 1
   logCustomMetrics: 1
   drawAgentPath: 0
   saveAgentPath: 0
@@ -17281,7 +17283,7 @@ MonoBehaviour:
   objLocationIdxSelected: 1
   autoSetTarget: 1
   autoSetRoom: 1
-  isTraining: 1
+  isTraining: 0
   shuffleReplay: 1
   testIdx: 0
   replayInInference: 1

@@ -15,10 +15,11 @@ public class CommunicationHub: MonoBehaviour
     // Path to read recordings.
     [Tooltip("The save path for object prefabs relative to the Assets folder")]
     public string objSavePath = "/Resources/NavObj/";
-    [Tooltip("The save path for gesture animation clips relative to the Assets folder")]
+    [Tooltip("The save path for referencing gesture animation clips relative to the Assets folder")]
     public string animSavePath = "/Resources/Recordings/";
     private string recordingAbsPath;
     private string animAbsPath;
+    private string stopAnimAbsPath;
     [Tooltip("Script that controlls the replay of animation clips")]
     public RepGestureAnim replayController;
     private AnimatorController[] animCtrls;
@@ -58,7 +59,8 @@ public class CommunicationHub: MonoBehaviour
     private int[] objNums = new int[3];
     // List to save all selected navigable objects
     private NavObj[] selectedNavObjs;
-    private AnimationClip selectedClip;
+    private AnimationClip[] selectedClip; // played animationclip
+    private AnimationClip[] selectedRefClip; // played referencing clip
     private Transform[] _objList;
     // Object location indices for target and environment objects
     private int[] objLocIdx;
@@ -81,6 +83,7 @@ public class CommunicationHub: MonoBehaviour
         // deviceList = new string[]{"Kinect", "LeapLeft", "LeapRight"};
         // animCtrls = new AnimatorController[3]{replayController.kinectController,replayController.leapLeftController,replayController.leapRightController};
         deviceList = new string[]{"Kinect", "LeapRight"}; // only replay on right hand
+        selectedClip = new AnimationClip[deviceList.Length];
         animCtrls = new AnimatorController[2]{replayController.kinectController, replayController.leapRightController}; // only replay on right hand
          
         objCatList = Enum.GetNames(typeof(NavObj.ObjCategory)).ToArray();
@@ -88,8 +91,9 @@ public class CommunicationHub: MonoBehaviour
         // Load all prefabs at specified path
         recordingAbsPath = Application.dataPath + objSavePath + (!isTraining&&newObjects? "Test/":"Train/");
         animAbsPath = Application.dataPath + animSavePath + (!isTraining&&newGestures? "Test/":"Train/");
+        stopAnimAbsPath = Application.dataPath + animSavePath + "stop_gestures/";
         LoadNavObjPrefabs(objList, recordingAbsPath);
-        LoadAnimationClips(animList, animAbsPath);
+        LoadAnimationClips(animList, animAbsPath); LoadAnimationClips(animList, stopAnimAbsPath);
     }
 
     void Start()
@@ -117,8 +121,33 @@ public class CommunicationHub: MonoBehaviour
 
         for(int i=0;i<deviceList.Length;i++)
         {
-            if(envSetup.autoSetTarget||agentController.CompletedEpisodes==0) replayController.PlayAnimClipInCtrl(animCtrls[i],SelectAnimClip(deviceList[i], playerID, m_objCat, m_objLocIdx));
-            else replayController.PlayAnimClipInCtrl(animCtrls[i],selectedClip);
+            if(envSetup.autoSetTarget||agentController.CompletedEpisodes==0)
+            {
+                AnimationClip m_Clip = SelectAnimClip(deviceList[i], playerID, m_objCat, m_objLocIdx);
+                selectedClip[i] = m_Clip;
+                replayController.PlayAnimClipInCtrl(animCtrls[i],m_Clip);
+            }
+            else
+            { 
+                replayController.PlayAnimClipInCtrl(animCtrls[i],selectedClip[i]);
+            }
+        }
+    }
+
+    // Resume referencing gesture replay
+    public void ResumeReplay()
+    {
+        for(int i=0;i<deviceList.Length;i++)
+        {
+            replayController.PlayAnimClipInCtrl(animCtrls[i],selectedClip[i]);
+        }
+    }
+
+    public void SetupStopReplay()
+    {     
+        for(int i=0;i<deviceList.Length;i++)
+        {
+            replayController.PlayAnimClipInCtrl(animCtrls[i],SelectStopAnimClip(deviceList[i]));
         }
     }
 
@@ -251,10 +280,19 @@ public class CommunicationHub: MonoBehaviour
     private AnimationClip SelectAnimClip(string m_device, int playerID, NavObj.ObjCategory m_objCat, int m_objLocIdx)
     {
         AnimationClip[] qualifiedList = animList.Where(anim => anim.name.Split('_')[0]==m_device&&
-                                    anim.name.Split('_')[1]==playerID.ToString()&&
-                                    anim.name.Split('_')[2]==m_objCat.ToString()&&
-                                    anim.name.Split('_')[3]==m_objLocIdx.ToString()).ToArray();
-        selectedClip = qualifiedList[Random.Range(0,qualifiedList.Length)];
+                                        anim.name.Split('_')[1]==playerID.ToString()&&
+                                        anim.name.Split('_')[2]==m_objCat.ToString()&&
+                                        anim.name.Split('_')[3]==m_objLocIdx.ToString()).ToArray();
+        AnimationClip selectedClip = qualifiedList[Random.Range(0,qualifiedList.Length)];
+        return selectedClip;
+    }
+
+    // Play animation clips with stop signs
+    private AnimationClip SelectStopAnimClip(string m_device)
+    {
+        AnimationClip[] qualifiedList = animList.Where(anim => anim.name.Split('_')[1].StartsWith("stop")&&
+                                        anim.name.Split('_')[0]==m_device).ToArray();
+        AnimationClip selectedClip = qualifiedList[Random.Range(0,qualifiedList.Length)];
         return selectedClip;
     }
 

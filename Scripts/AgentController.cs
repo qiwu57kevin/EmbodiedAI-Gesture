@@ -31,8 +31,10 @@ public class AgentController : Agent
     // how many modals we have (we have category + gesture)
     [Header("Sensor Setting")]
     public bool useCategory = false; // category info
-    public bool useGesture = false; // gesture
+    public bool useBody = false; // gesture
     public bool useHand = false; // if hand will be used
+    [Tooltip("Whether to use human intervention")]
+    public bool useHumanIntervention = false;
 
     [Header("Log Setting")]
     public bool logCustomMetrics = false;
@@ -55,6 +57,8 @@ public class AgentController : Agent
     float distanceToTarget = 1000f;
     bool contact = false; // if the agent is in contact with an object
     bool stop = false; // if the agent has issued a stop action
+    bool needHelp = false; // if the agent needs help from the human players (human players can make a stop action to correct the agent)
+    bool isHelped = false; // if the agent is currently being helped by a human player
 
     // Animaton capture
     [Header("Observation Capture")]
@@ -98,9 +102,11 @@ public class AgentController : Agent
     int stopActions = 0; // Stop actions called in one episode
     int STEP_COUNT = 0; // Number of training steps
     int SUCCESS_EPISODE_COUNT = 0; // Number of successful episodes
+    int STOP_EPISODE_COUNT = 0; // Number of episdoes with stop action called (in case episode is not called in some steps)
     float SMS_TOT = 0f; // Total number of SMS
-    int SUCCESS_3STOPS =0;  int SUCCESS_5STOPS =0; int SUCCESS_10STOPS =0; int SUCCESS_15STOPS =0; int SUCCESS_20STOPS =0; // Number of successful episodes less than the amount of stops
-    float SMS_3STOPS =0f;  float SMS_5STOPS =0f; float SMS_10STOPS =0f; float SMS_15STOPS =0f; float SMS_20STOPS =0f; // SMS less than the amount of stops
+    int SUCCESS_1STOP=0; int SUCCESS_2STOPS=0; int SUCCESS_3STOPS =0;  int SUCCESS_5STOPS =0; int SUCCESS_10STOPS =0; int SUCCESS_15STOPS =0; int SUCCESS_20STOPS =0; // Number of successful episodes less than the amount of stops
+    float SMS_1STOP=0; float SMS_2STOPS=0;float SMS_3STOPS =0f;  float SMS_5STOPS =0f; float SMS_10STOPS =0f; float SMS_15STOPS =0f; float SMS_20STOPS =0f; // SMS less than the amount of stops
+    float DTS_1STOP=0; // Average DTS at the first stop
     bool EPISODE_DONE = false; // if the episode is completed or not
     bool EPISODE_SUCCESS = false; // if the episode is a success or not
     StatsRecorder statsRecorder;
@@ -183,6 +189,12 @@ public class AgentController : Agent
 
         if(CompletedEpisodes>0)
         {
+            // Increment episode with stop actions
+            if(stopActions>=1)
+            {
+                STOP_EPISODE_COUNT += 1;
+            }
+
             // Save path if required (only in inference)
             if(drawAgentPath)
             {
@@ -250,43 +262,52 @@ public class AgentController : Agent
         distanceToTarget = 1000f;
         contact = false;
         stop = false;
+        isHelped = false;
     }
 
     public override void CollectObservations(VectorSensor sensor)
     {
         sensor.AddObservation(transform.position);
 
-        // if(useCategory)
-        // {
-        //     sensor.AddOneHotObservation((int)typeSelected, targetKeywords.Count);
-        // }
-        // else
-        // {
-        //     sensor.AddObservation(new float[targetKeywords.Count]);
-        // }
-
-        // Use object instance number as the object label
         if(useCategory)
         {
-            sensor.AddOneHotObservation(instanceNumSelected, 33);
+            sensor.AddOneHotObservation((int)typeSelected, targetKeywords.Count);
         }
         else
         {
-            sensor.AddObservation(new float[33]);
+            sensor.AddObservation(new float[targetKeywords.Count]);
         }
 
+        // // Use object instance number as the object label
+        // if(useCategory)
+        // {
+        //     sensor.AddOneHotObservation(instanceNumSelected, 33);
+        // }
+        // else
+        // {
+        //     sensor.AddObservation(new float[33]);
+        // }
+
         // Add Kinect observations
-        if(useGesture)
+        if(useBody) animTaker.TakeKinectSnapshot(sensor); // 81
+        else sensor.AddObservation(new float[81]);
+        // Add Leap observations
+        if(useHand) animTaker.TakeLeapSnapshot(sensor); // 184
+        else sensor.AddObservation(new float[184]);
+
+        // Check if the agent needs help and give instructions if needed
+        if(useHumanIntervention)
         {
-            animTaker.TakeKinectSnapshot(sensor); // 75
-            if(useHand) animTaker.TakeLeapSnapshot(sensor); // 124
-            // else sensor.AddObservation(new float[150]);
-            else sensor.AddObservation(new float[124]);
-        }
-        else 
-        {
-            // sensor.AddObservation(new float[298]);
-            sensor.AddObservation(new float[199]);
+            if(!isHelped&&requireHelpFromHumanPlayer(targetObj, transform.position, transform.forward))
+            {
+                isHelped = true;
+                commHub.SetupStopReplay();
+            }
+            else if(isHelped&&!requireHelpFromHumanPlayer(targetObj, transform.position, transform.forward))
+            {
+                isHelped = false;
+                commHub.ResumeReplay();
+            }
         }
     }
     
@@ -368,6 +389,11 @@ public class AgentController : Agent
             actionsOut[0] = 3;
             // Debug.Log("Left");
         }
+        if (Input.GetKey(KeyCode.Space))
+        {
+            actionsOut[0] = 4;
+            // Debug.Log("Stop");
+        }
     }
 
     #region Customized Functions
@@ -394,6 +420,7 @@ public class AgentController : Agent
             if(stop)
             {
                 stopActions++;
+                if(stopActions==1) DTS_1STOP += Mathf.Max(0f, DistanceToTarget(transform.position, targetObj) - navigationThreshold);
                 if(distanceToTarget<navigationThreshold && isVisibleFromCam(rgbCam, targetObj))
                 {
                     AddReward(1f);
@@ -440,12 +467,12 @@ public class AgentController : Agent
 
         objList = commHub.SetupTarget(catSelected, locIdxSelected);
         targetObj = objList[0];
-        if((isTraining||envSetup.replayInInference)&&(useGesture)) 
+        if((isTraining||envSetup.replayInInference)&&(useBody)) 
         {
             commHub.SetupReplay(catSelected, locIdxSelected);
         }
-        // typeSelected = commHub.objType;
-        instanceNumSelected = commHub.objInstanceNum;
+        typeSelected = commHub.objType;
+        // instanceNumSelected = commHub.objInstanceNum;
         targetObjRenderers = targetObj.GetComponentsInChildren<Renderer>();
     }
 
@@ -523,6 +550,17 @@ public class AgentController : Agent
         }
     }
 
+    // Check if the agent needs help from the human player
+    public bool requireHelpFromHumanPlayer(Transform target, Vector3 currentPos, Vector3 facingNorm)
+    {
+        float angle = FacingAngle(target, currentPos, facingNorm);
+        if(angle>135f)
+        {
+            return true;
+        }
+        return false;
+    }
+
     // Calculate the angle between current facing direction and the target
     private float FacingAngle(Transform target, Vector3 currentPos, Vector3 facingNorm)
     {
@@ -554,6 +592,8 @@ public class AgentController : Agent
             SUCCESS_EPISODE_COUNT += 1;
             SMS_TOT += sms;
 
+            if(numStops<=1) {SUCCESS_1STOP += 1; SMS_1STOP += sms;}
+            if(numStops<=2) {SUCCESS_2STOPS += 1; SMS_2STOPS += sms;}
             if(numStops<=3) {SUCCESS_3STOPS += 1; SMS_3STOPS += sms;}
             if(numStops<=5) {SUCCESS_5STOPS += 1; SMS_5STOPS += sms;}
             if(numStops<=10) {SUCCESS_10STOPS += 1; SMS_10STOPS += sms;}
@@ -575,6 +615,12 @@ public class AgentController : Agent
         statsRecorder.Add("STOPS/Number of Stops", numStops);
 
         // Log SR less than 3 stops
+        statsRecorder.Add("STOPS/SR/SR on 1 Stop", (float)SUCCESS_1STOP/CompletedEpisodes);
+        statsRecorder.Add("STOPS/SMS/SMS on 1 Stop", SMS_1STOP/CompletedEpisodes);
+        // Log SR less than 3 stops
+        statsRecorder.Add("STOPS/SR/SR on 2 Stops", (float)SUCCESS_2STOPS/CompletedEpisodes);
+        statsRecorder.Add("STOPS/SMS/SMS on 2 Stops", SMS_2STOPS/CompletedEpisodes);
+        // Log SR less than 3 stops
         statsRecorder.Add("STOPS/SR/SR on 3 Stops", (float)SUCCESS_3STOPS/CompletedEpisodes);
         statsRecorder.Add("STOPS/SMS/SMS on 3 Stops", SMS_3STOPS/CompletedEpisodes);
         // Log SR less than 5 stops
@@ -589,6 +635,9 @@ public class AgentController : Agent
         // Log SR less than 20 stops
         statsRecorder.Add("STOPS/SR/SR on 20 Stops", (float)SUCCESS_20STOPS/CompletedEpisodes);
         statsRecorder.Add("STOPS/SMS/SMS on 20 Stops", SMS_20STOPS/CompletedEpisodes);
+
+        // Log average DTS at the first stop
+        statsRecorder.Add("STOPS/DTS/Average DTS at the 1st stop", DTS_1STOP/STOP_EPISODE_COUNT);
     }
 
     // Calculate distance to success (Chaplot et al., 2020) (DTS), which is the distance of the agent from the success threshold boundary when the episode ends

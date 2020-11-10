@@ -8,6 +8,7 @@ using Unity.MLAgents.Sensors;
 // Take a snapshot of the current frame from the animation
 public class TakeAnimSnapshot : MonoBehaviour
 {
+    public Transform embodiedAgent;
     public GameObject kinectGameObject;
     public Transform kinectHipT;
 
@@ -39,6 +40,12 @@ public class TakeAnimSnapshot : MonoBehaviour
             sensor.AddObservation(joint.localRotation);
         }
         // in total 58+17=75
+
+        // Add observations relative to the agent itself
+        sensor.AddObservation(PosToFloats(kinectGameObject.transform.localPosition - embodiedAgent.position)); 
+        sensor.AddObservation(PosToFloats(kinectHipT.transform.localPosition - embodiedAgent.position));
+        
+        // in total 6
     }
 
     public void TakeLeapSnapshot(VectorSensor sensor)
@@ -49,6 +56,8 @@ public class TakeAnimSnapshot : MonoBehaviour
             {
                 // leapObs.AddRange(Vector3ToFloats(leapT.localScale));
                 sensor.AddObservation(PosToFloats(leapT.position));
+                // Add observations relative to the agent itself
+                sensor.AddObservation(PosToFloats(leapT.position - embodiedAgent.position));
                 if(!ignoredLeapRotations.Contains(leapT.name))
                 {
                     // sensor.AddObservation(leapT.rotation.eulerAngles/360f);
@@ -56,16 +65,16 @@ public class TakeAnimSnapshot : MonoBehaviour
                 }
             }
         }
-        // in total 124
+        // in total 124 + 60
     }
 
     private List<float> PosToFloats(Vector3 vec)
     {
         List<float> floatList = new List<float>();
         // Normalize position w.r.t room size (x*z*y = L*W*H = 8*5*2.5)
-        floatList.Add(vec.x/2f);
-        floatList.Add(vec.y/2f);
-        floatList.Add(vec.z/2f);
+        floatList.Add(vec.x/4f);
+        floatList.Add(vec.y/2.5f);
+        floatList.Add(vec.z/2.5f);
         return floatList;
     }
 

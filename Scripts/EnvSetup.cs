@@ -37,9 +37,9 @@ public class EnvSetup : MonoBehaviour
     {   
         // Auto set object category and location
         if(autoSetTarget)
-        {
-            
+        {          
             objCatSelected = (NavObj.ObjCategory)Random.Range(0,numObjCats);
+            // objCatSelected = NavObj.ObjCategory.OnFurnitureTop;
             objLocationIdxSelected = Random.Range(0,10);
         }               
     }
