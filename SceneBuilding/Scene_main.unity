@@ -10212,7 +10212,7 @@ MonoBehaviour:
   m_BrainParameters:
     VectorObservationSize: 278
     NumStackedVectorObservations: 1
-    VectorActionSize: 04000000
+    VectorActionSize: 05000000
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
   m_Model: {fileID: 0}
@@ -10308,7 +10308,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 282f342c2ab144bf38be65d4d0c4e07d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Camera: {fileID: 398075535}
+  m_Camera: {fileID: 1306097177205799280}
   m_SensorName: AgentRGB
   m_Width: 150
   m_Height: 150
@@ -10375,7 +10375,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 282f342c2ab144bf38be65d4d0c4e07d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Camera: {fileID: 398075535}
+  m_Camera: {fileID: 8812713326967745625}
   m_SensorName: AgentDepth
   m_Width: 150
   m_Height: 150
@@ -17433,8 +17433,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 66efd1c439769d147bab00b3ea8b0b2c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  objCatSelected: 1
-  objLocationIdxSelected: 1
+  objCatSelected: 0
+  objLocationIdxSelected: 0
   autoSetTarget: 1
   autoSetRoom: 1
   isTraining: 1

@@ -30,20 +30,20 @@ public class TakeAnimSnapshot : MonoBehaviour
     public void TakeKinectSnapshot(VectorSensor sensor)
     {
         sensor.AddObservation(kinectGameObject.transform.localScale.x); // Kinect avatar scale, related to player information
-        sensor.AddObservation(PosToFloats(kinectGameObject.transform.localPosition)); //
-        sensor.AddObservation(PosToFloats(kinectHipT.transform.localPosition));
+        sensor.AddObservation(PosToFloats(kinectGameObject.transform.position)); //
+        sensor.AddObservation(PosToFloats(kinectHipT.transform.position));
         
         // Track rotations for each joint (positions will not be tracked since they won't change with time)
         foreach(Transform joint in observedKinectTs)
         {
             // sensor.AddObservation(joint.localRotation.eulerAngles/360f);
-            sensor.AddObservation(joint.localRotation);
+            sensor.AddObservation(joint.rotation);
         }
         // in total 58+17=75
 
         // Add observations relative to the agent itself
-        sensor.AddObservation(PosToFloats(kinectGameObject.transform.localPosition - embodiedAgent.position)); 
-        sensor.AddObservation(PosToFloats(kinectHipT.transform.localPosition - embodiedAgent.position));
+        sensor.AddObservation(PosToFloats(kinectGameObject.transform.position - embodiedAgent.position)); 
+        sensor.AddObservation(PosToFloats(kinectHipT.transform.position - embodiedAgent.position));
         
         // in total 6
     }

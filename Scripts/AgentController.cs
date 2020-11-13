@@ -104,7 +104,6 @@ public class AgentController : Agent
     int stopActions = 0; // Stop actions called in one episode
     int STEP_COUNT = 0; // Number of training steps
     int SUCCESS_EPISODE_COUNT = 0; // Number of successful episodes
-    int STOP_EPISODE_COUNT = 0; // Number of episdoes with stop action called (in case episode is not called in some steps)
     float SMS_TOT = 0f; // Total number of SMS
     int SUCCESS_1STOP=0; int SUCCESS_2STOPS=0; int SUCCESS_3STOPS =0;  int SUCCESS_5STOPS =0; int SUCCESS_10STOPS =0; int SUCCESS_15STOPS =0; int SUCCESS_20STOPS =0; // Number of successful episodes less than the amount of stops
     float SMS_1STOP=0; float SMS_2STOPS=0;float SMS_3STOPS =0f;  float SMS_5STOPS =0f; float SMS_10STOPS =0f; float SMS_15STOPS =0f; float SMS_20STOPS =0f; // SMS less than the amount of stops
@@ -191,12 +190,6 @@ public class AgentController : Agent
 
         if(CompletedEpisodes>0)
         {
-            // Increment episode with stop actions
-            if(stopActions>=1)
-            {
-                STOP_EPISODE_COUNT += 1;
-            }
-
             // Save path if required (only in inference)
             if(drawAgentPath)
             {
@@ -340,17 +333,17 @@ public class AgentController : Agent
         {
             switch(action)
             {
-                case 0: // Move forward
+                case 1: // Move forward
                     transform.Translate(transform.forward * forwardAmount, Space.World);
                     break;
-                case 1: // Turn right
+                case 2: // Turn right
                     transform.Rotate(0, turnAmount, 0);
                     break;
-                case 2: // Turn left
+                case 3: // Turn left
                     // transform.Rotate(0, -turnAmount * Time.deltaTime, 0);
                     transform.Rotate(0, -turnAmount, 0);
                     break;
-                case 3: // STOP
+                case 4: // STOP
                     if(requireStop)
                     {
                         stop = true;
@@ -409,12 +402,12 @@ public class AgentController : Agent
         // AddReward(-1f/MaxStep);
         AddReward(-0.001f);
 
-        // Collision penalty
-        if (contact)
-        {
-            // AddReward(-5f/MaxStep);
-            AddReward(-0.005f);
-        }
+        // // Collision penalty
+        // if (contact)
+        // {
+        //     // AddReward(-5f/MaxStep);
+        //     AddReward(-0.005f);
+        // }
 
 
         if(requireStop)
@@ -422,7 +415,7 @@ public class AgentController : Agent
             if(stop)
             {
                 stopActions++;
-                if(stopActions==1) DTS_1STOP += Mathf.Max(0f, DistanceToTarget(transform.position, targetObj) - navigationThreshold);
+                if(stopActions==1) DTS_1STOP = Mathf.Max(0f, DistanceToTarget(transform.position, targetObj) - navigationThreshold);
                 if(distanceToTarget<navigationThreshold && isVisibleFromCam(rgbCam, targetObj))
                 // if(distanceToTarget<navigationThreshold)
                 {
@@ -646,7 +639,7 @@ public class AgentController : Agent
         statsRecorder.Add("STOPS/SMS/SMS on 20 Stops", SMS_20STOPS/CompletedEpisodes);
 
         // Log average DTS at the first stop
-        statsRecorder.Add("STOPS/DTS/Average DTS at the 1st stop", DTS_1STOP/STOP_EPISODE_COUNT);
+        statsRecorder.Add("STOPS/DTS/Average DTS at the 1st stop", DTS_1STOP);
     }
 
     // Calculate distance to success (Chaplot et al., 2020) (DTS), which is the distance of the agent from the success threshold boundary when the episode ends
@@ -670,13 +663,13 @@ public class AgentController : Agent
         if(collision.collider.tag == "Environment" || collision.collider.tag == "Structure")
         {
             contact = true;
+            AddReward(-0.005f);
         }
     }
 
     void OnCollisionExit(Collision collision)
     {
         contact = false;
-
     }
 
     ///Unity events

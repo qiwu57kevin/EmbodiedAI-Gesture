@@ -498,7 +498,7 @@ MeshCollider:
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 4
-  m_Convex: 1
+  m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 5439737192064214556, guid: 8c29c1a781b026a49ade53d5f1a5510c, type: 3}
 --- !u!1 &8055808840780608707
@@ -592,7 +592,7 @@ MeshCollider:
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 4
-  m_Convex: 1
+  m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: -1388485733357891733, guid: 8c29c1a781b026a49ade53d5f1a5510c, type: 3}
 --- !u!1 &8055808840780608709
@@ -686,7 +686,7 @@ MeshCollider:
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 4
-  m_Convex: 1
+  m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: -1438421871309224668, guid: 8c29c1a781b026a49ade53d5f1a5510c, type: 3}
 --- !u!1 &8055808840780608713
@@ -780,7 +780,7 @@ MeshCollider:
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 4
-  m_Convex: 1
+  m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: -5462847723828066589, guid: 8c29c1a781b026a49ade53d5f1a5510c, type: 3}
 --- !u!1 &8055808840780608715
@@ -910,7 +910,7 @@ MeshCollider:
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 4
-  m_Convex: 1
+  m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: -4650390976156102637, guid: 8c29c1a781b026a49ade53d5f1a5510c, type: 3}
 --- !u!1 &8055808840780608719
@@ -1004,7 +1004,7 @@ MeshCollider:
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 4
-  m_Convex: 1
+  m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: -5410104721861512981, guid: 8c29c1a781b026a49ade53d5f1a5510c, type: 3}
 --- !u!1 &8055808840814465647
@@ -1673,7 +1673,7 @@ MeshCollider:
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 4
-  m_Convex: 1
+  m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 4300002, guid: d52b48341389f7146849499fed53440d, type: 3}
 --- !u!1 &8055808842033070827
@@ -1799,7 +1799,7 @@ MeshCollider:
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 4
-  m_Convex: 1
+  m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 4300000, guid: d52b48341389f7146849499fed53440d, type: 3}
 --- !u!1 &8055808842227041483
