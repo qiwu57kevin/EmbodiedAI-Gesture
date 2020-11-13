@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.44300273, g: 0.492195, b: 0.57192504, a: 1}
+  m_IndirectSpecularColor: {r: 0.4430032, g: 0.49219626, b: 0.571926, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -1556,7 +1556,6 @@ GameObject:
   m_Component:
   - component: {fileID: 398075536}
   - component: {fileID: 398075535}
-  - component: {fileID: 398075534}
   m_Layer: 0
   m_Name: BlackCam
   m_TagString: Untagged
@@ -1564,14 +1563,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!81 &398075534
-AudioListener:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 398075533}
-  m_Enabled: 1
 --- !u!20 &398075535
 Camera:
   m_ObjectHideFlags: 0
@@ -10275,9 +10266,10 @@ MonoBehaviour:
   navigationThreshold: 1.5
   randomPosition: 1
   requireStop: 1
+  allowStopOnce: 0
   maxStopActions: 1000
   humanoidMovement: 0
-  useCategory: 0
+  useCategory: 1
   useBody: 1
   useHand: 1
   useHumanIntervention: 0
@@ -17445,7 +17437,7 @@ MonoBehaviour:
   objLocationIdxSelected: 1
   autoSetTarget: 1
   autoSetRoom: 1
-  isTraining: 0
+  isTraining: 1
   shuffleReplay: 1
   testIdx: 0
   replayInInference: 1
@@ -17470,8 +17462,8 @@ MonoBehaviour:
   agentController: {fileID: 1306097176030678029}
   roomRootT: {fileID: 1883611374}
   newGestures: 0
-  newObjects: 0
-  newRooms: 0
+  newObjects: 1
+  newRooms: 1
   objType: 0
   objInstanceNum: 0
 --- !u!23 &8611552537495660336

@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 6661808460010868890}
   m_Layer: 0
   m_Name: table_3
-  m_TagString: Untagged
+  m_TagString: Environment
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -45,7 +45,7 @@ GameObject:
   - component: {fileID: 6693613870052136904}
   m_Layer: 0
   m_Name: TopMesh
-  m_TagString: Untagged
+  m_TagString: Environment
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 3
   m_StaticEditorFlags: 12
@@ -122,7 +122,7 @@ MeshCollider:
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 4
-  m_Convex: 0
+  m_Convex: 1
   m_CookingOptions: 30
   m_Mesh: {fileID: 4300004, guid: 48c067e197bc64e748f1b19d3e0ae8cc, type: 3}
 --- !u!1 &4868652066553762522
@@ -136,7 +136,7 @@ GameObject:
   - component: {fileID: 4871335627300069434}
   m_Layer: 8
   m_Name: table_3
-  m_TagString: SimObjPhysics
+  m_TagString: Environment
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 3
   m_StaticEditorFlags: 12
@@ -171,7 +171,7 @@ GameObject:
   - component: {fileID: 1641959412839954780}
   m_Layer: 0
   m_Name: LegMesh
-  m_TagString: Untagged
+  m_TagString: Environment
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 3
   m_StaticEditorFlags: 12
@@ -248,6 +248,6 @@ MeshCollider:
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 4
-  m_Convex: 0
+  m_Convex: 1
   m_CookingOptions: 30
   m_Mesh: {fileID: 4300002, guid: 48c067e197bc64e748f1b19d3e0ae8cc, type: 3}

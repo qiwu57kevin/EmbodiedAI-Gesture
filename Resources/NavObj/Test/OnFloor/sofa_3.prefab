@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 1880491895005974612}
   m_Layer: 0
   m_Name: sofa_3
-  m_TagString: Untagged
+  m_TagString: Environment
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -92,7 +92,7 @@ MeshCollider:
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 4
-  m_Convex: 0
+  m_Convex: 1
   m_CookingOptions: 30
   m_Mesh: {fileID: 4300000, guid: fd1cb84b8ad6c461a840692bdffd7258, type: 3}
 --- !u!1 &1943315612536803544
@@ -109,7 +109,7 @@ GameObject:
   - component: {fileID: 112320598934824002}
   m_Layer: 0
   m_Name: Pillow (4)
-  m_TagString: Untagged
+  m_TagString: Environment
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -186,7 +186,7 @@ MeshCollider:
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 4
-  m_Convex: 0
+  m_Convex: 1
   m_CookingOptions: 30
   m_Mesh: {fileID: 4300000, guid: f3df77158d4a0460e88fa5f19a430c2a, type: 3}
 --- !u!1 &4591952477442191867
@@ -200,7 +200,7 @@ GameObject:
   - component: {fileID: 1357019307540541209}
   m_Layer: 0
   m_Name: sofa_3
-  m_TagString: Untagged
+  m_TagString: Environment
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

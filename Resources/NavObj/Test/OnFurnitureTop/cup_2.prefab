@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: -2040251746992677387}
   m_Layer: 0
   m_Name: cup_2
-  m_TagString: Untagged
+  m_TagString: Environment
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -108,7 +108,7 @@ GameObject:
   - component: {fileID: 23684114238617878}
   m_Layer: 0
   m_Name: cup_int_10
-  m_TagString: Untagged
+  m_TagString: Environment
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

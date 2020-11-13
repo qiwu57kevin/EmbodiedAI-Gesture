@@ -23,6 +23,8 @@ public class AgentController : Agent
     public bool randomPosition = true;
     [Tooltip("Require STOP action.")]
     public bool requireStop = true;
+    [Tooltip("Allow only stop once")]
+    public bool allowStopOnce = false;
     [Tooltip("Maximum number of STOP actions an agent can issue within one episode.")][Range(10,1000)]
     public int maxStopActions = 10;
     [Tooltip("Mimic human movement.")]
@@ -296,7 +298,7 @@ public class AgentController : Agent
         else sensor.AddObservation(new float[184]);
 
         // Check if the agent needs help and give instructions if needed
-        if(useHumanIntervention)
+        if((useHand||useBody) && useHumanIntervention)
         {
             if(!isHelped&&requireHelpFromHumanPlayer(targetObj, transform.position, transform.forward))
             {
@@ -422,6 +424,7 @@ public class AgentController : Agent
                 stopActions++;
                 if(stopActions==1) DTS_1STOP += Mathf.Max(0f, DistanceToTarget(transform.position, targetObj) - navigationThreshold);
                 if(distanceToTarget<navigationThreshold && isVisibleFromCam(rgbCam, targetObj))
+                // if(distanceToTarget<navigationThreshold)
                 {
                     AddReward(1f);
                     done = true;
@@ -437,7 +440,10 @@ public class AgentController : Agent
                     // AddReward(-2f/MaxStep);
                     // AddReward(-Academy.Instance.EnvironmentParameters.GetWithDefault("wrong_stop_penalty", 0.05f));
                     AddReward(-0.1f);
-                    // done = true;
+                    if(allowStopOnce)
+                    {
+                        done = true;
+                    }
                 }
                 stop = false;
             }
@@ -487,7 +493,7 @@ public class AgentController : Agent
     {
         // Vector3 closestPoint = targetObjBounds.ClosestPoint(pos);
         // return Distance2D(pos, closestPoint)-0.3f; // offset by object radius
-        return Distance2D(pos, target.position) - 0.3f;
+        return Distance2D(pos, target.position);
     }
 
     // Randomly choose agent positions based on the room width and length
@@ -605,6 +611,7 @@ public class AgentController : Agent
     // Log SR and SMS
     private void LogSuccessRate()
     {
+        float sms = SuccessRateSMS(STEP_COUNT, targetObj, startingPosition, startingFacingNorm);
         statsRecorder.Add("Metrics/Success Rate", (float)SUCCESS_EPISODE_COUNT/CompletedEpisodes);
         statsRecorder.Add("Metrics/Success Rate Weighted by Min Steps", SMS_TOT/CompletedEpisodes);
     }
@@ -615,7 +622,9 @@ public class AgentController : Agent
         statsRecorder.Add("STOPS/Number of Stops", numStops);
 
         // Log SR less than 3 stops
+        statsRecorder.Add("STOPS/SR/Average SR on 1 Stop", EPISODE_SUCCESS&&numStops==1? 1f:0f);
         statsRecorder.Add("STOPS/SR/SR on 1 Stop", (float)SUCCESS_1STOP/CompletedEpisodes);
+        statsRecorder.Add("STOPS/SR/Average SMS on 1 Stop", EPISODE_SUCCESS&&numStops==1? SuccessRateSMS(STEP_COUNT, targetObj, startingPosition, startingFacingNorm):0f);
         statsRecorder.Add("STOPS/SMS/SMS on 1 Stop", SMS_1STOP/CompletedEpisodes);
         // Log SR less than 3 stops
         statsRecorder.Add("STOPS/SR/SR on 2 Stops", (float)SUCCESS_2STOPS/CompletedEpisodes);

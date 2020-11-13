@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: -4961257088043263846}
   m_Layer: 0
   m_Name: laptop_17
-  m_TagString: Untagged
+  m_TagString: Environment
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -112,7 +112,7 @@ GameObject:
   - component: {fileID: 23681842980605710}
   m_Layer: 0
   m_Name: laptop_lid_17
-  m_TagString: Untagged
+  m_TagString: Environment
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

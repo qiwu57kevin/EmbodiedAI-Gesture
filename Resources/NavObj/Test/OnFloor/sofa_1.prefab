@@ -12,9 +12,9 @@ GameObject:
   - component: {fileID: 33000013014362814}
   - component: {fileID: 23000011241399132}
   - component: {fileID: 64000011908943408}
-  m_Layer: 8
+  m_Layer: 0
   m_Name: SofaChair1
-  m_TagString: Untagged
+  m_TagString: Environment
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -91,7 +91,7 @@ MeshCollider:
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 4
-  m_Convex: 0
+  m_Convex: 1
   m_CookingOptions: 30
   m_Mesh: {fileID: 4300000, guid: aa897adebe2004b32b8b72df1a14b28d, type: 3}
 --- !u!1 &1000011430413346
@@ -103,9 +103,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4000011924323116}
-  m_Layer: 8
+  m_Layer: 0
   m_Name: sofa_1
-  m_TagString: Untagged
+  m_TagString: Environment
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -134,9 +134,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4000010546248900}
-  m_Layer: 8
+  m_Layer: 0
   m_Name: Base
-  m_TagString: Untagged
+  m_TagString: Environment
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -169,9 +169,9 @@ GameObject:
   - component: {fileID: 33000010892586620}
   - component: {fileID: 23000010461590290}
   - component: {fileID: 785650614366365738}
-  m_Layer: 8
+  m_Layer: 0
   m_Name: ThrowCloth
-  m_TagString: Untagged
+  m_TagString: Environment
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -248,6 +248,6 @@ MeshCollider:
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 4
-  m_Convex: 0
+  m_Convex: 1
   m_CookingOptions: 30
   m_Mesh: {fileID: 4300000, guid: ac8c064914f094f3690a72a8794688a8, type: 3}

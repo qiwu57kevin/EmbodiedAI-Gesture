@@ -59,7 +59,7 @@ public class CommunicationHub: MonoBehaviour
     private int[] objNums = new int[3];
     // List to save all selected navigable objects
     private NavObj[] selectedNavObjs;
-    private AnimationClip[] selectedClip; // played animationclip
+    private AnimationClip[] selectedStopClip; // played animationclip
     private AnimationClip[] selectedRefClip; // played referencing clip
     private Transform[] _objList;
     // Object location indices for target and environment objects
@@ -83,7 +83,8 @@ public class CommunicationHub: MonoBehaviour
         // deviceList = new string[]{"Kinect", "LeapLeft", "LeapRight"};
         // animCtrls = new AnimatorController[3]{replayController.kinectController,replayController.leapLeftController,replayController.leapRightController};
         deviceList = new string[]{"Kinect", "LeapRight"}; // only replay on right hand
-        selectedClip = new AnimationClip[deviceList.Length];
+        selectedStopClip = new AnimationClip[deviceList.Length];
+        selectedRefClip = new AnimationClip[deviceList.Length];
         animCtrls = new AnimatorController[2]{replayController.kinectController, replayController.leapRightController}; // only replay on right hand
          
         objCatList = Enum.GetNames(typeof(NavObj.ObjCategory)).ToArray();
@@ -91,7 +92,7 @@ public class CommunicationHub: MonoBehaviour
         // Load all prefabs at specified path
         recordingAbsPath = Application.dataPath + objSavePath + (!isTraining&&newObjects? "Test/":"Train/");
         animAbsPath = Application.dataPath + animSavePath + (!isTraining&&newGestures? "Test/":"Train/");
-        stopAnimAbsPath = Application.dataPath + animSavePath + "stop_gestures/";
+        stopAnimAbsPath = Application.dataPath + animSavePath + "stop_gestures/" + (!isTraining&&newGestures? "Test/":"Train/");;
         LoadNavObjPrefabs(objList, recordingAbsPath);
         LoadAnimationClips(animList, animAbsPath); LoadAnimationClips(animList, stopAnimAbsPath);
     }
@@ -119,18 +120,13 @@ public class CommunicationHub: MonoBehaviour
         float scale = playerID2Height[playerID]/1.75f;
         if(envSetup.autoSetTarget||agentController.CompletedEpisodes==0) GameObject.Find("KinectAvatar").transform.localScale = new Vector3(scale, scale, scale);
 
+        if(envSetup.autoSetTarget||agentController.CompletedEpisodes==0)
+        {
+            SelectAnimClips(deviceList, playerID, m_objCat, m_objLocIdx);
+        }
         for(int i=0;i<deviceList.Length;i++)
         {
-            if(envSetup.autoSetTarget||agentController.CompletedEpisodes==0)
-            {
-                AnimationClip m_Clip = SelectAnimClip(deviceList[i], playerID, m_objCat, m_objLocIdx);
-                selectedClip[i] = m_Clip;
-                replayController.PlayAnimClipInCtrl(animCtrls[i],m_Clip);
-            }
-            else
-            { 
-                replayController.PlayAnimClipInCtrl(animCtrls[i],selectedClip[i]);
-            }
+            replayController.PlayAnimClipInCtrl(animCtrls[i],selectedRefClip[i]);
         }
     }
 
@@ -139,15 +135,16 @@ public class CommunicationHub: MonoBehaviour
     {
         for(int i=0;i<deviceList.Length;i++)
         {
-            replayController.PlayAnimClipInCtrl(animCtrls[i],selectedClip[i]);
+            replayController.PlayAnimClipInCtrl(animCtrls[i],selectedRefClip[i]);
         }
     }
 
     public void SetupStopReplay()
     {     
+        SelectStopAnimClips(deviceList);
         for(int i=0;i<deviceList.Length;i++)
         {
-            replayController.PlayAnimClipInCtrl(animCtrls[i],SelectStopAnimClip(deviceList[i]));
+            replayController.PlayAnimClipInCtrl(animCtrls[i],selectedStopClip[i]);
         }
     }
 
@@ -192,28 +189,6 @@ public class CommunicationHub: MonoBehaviour
             animList.Add(animLoaded);
         }
     }
-
-    // Select an objet prefab with provided object category. Return a list of objects with the first one as the target object
-    // private Object[] SelectNavObj(NavObj.ObjCategory m_objCat, int numObj)
-    // {
-    //     if(envSetup.autoSetTarget||agentController.CompletedEpisodes==0)
-    //     {
-    //         // Select NavObj with category m_objCat
-    //         NavObj[] _list = objList.Where(obj => obj.objCat==m_objCat).ToArray();
-
-    //         // Randomly select one object type
-    //         objType = _list[Random.Range(0,_list.Length)].objType;
-    //         NavObj[] qualifiedList = _list.Where(obj => obj.objType==objType).ToArray();
-
-    //         NavObj[] selectedList = new NavObj[numObj];
-    //         for(int i=0;i<numObj;i++)
-    //         { 
-    //             selectedList[i] = qualifiedList[Random.Range(0,qualifiedList.Length)];
-    //         }
-    //         _selectedNavObjs = selectedList.Select(obj => obj.objInstance).ToArray();
-    //     }
-    //     return _selectedNavObjs;
-    // }
 
     // Select an objet prefab with provided object category. Return a list of objects which will be randomly spawned in the scene. There can be at most 3 objects with OnFloor category,
     // including the target object.
@@ -277,23 +252,37 @@ public class CommunicationHub: MonoBehaviour
     }
 
     // Select Animation Clips with provided object category and location
-    private AnimationClip SelectAnimClip(string m_device, int playerID, NavObj.ObjCategory m_objCat, int m_objLocIdx)
+    private void SelectAnimClips(string[] m_devices, int playerID, NavObj.ObjCategory m_objCat, int m_objLocIdx)
     {
-        AnimationClip[] qualifiedList = animList.Where(anim => anim.name.Split('_')[0]==m_device&&
+        AnimationClip[][] qualifiedList = new AnimationClip[m_devices.Length][];
+        for(int i=0;i<m_devices.Length;i++)
+        {
+            qualifiedList[i] = animList.Where(anim => anim.name.Split('_')[0]==m_devices[i]&&
                                         anim.name.Split('_')[1]==playerID.ToString()&&
                                         anim.name.Split('_')[2]==m_objCat.ToString()&&
                                         anim.name.Split('_')[3]==m_objLocIdx.ToString()).ToArray();
-        AnimationClip selectedClip = qualifiedList[Random.Range(0,qualifiedList.Length)];
-        return selectedClip;
+        }
+        int selectedIndex = Random.Range(0,qualifiedList[0].Length);
+        for(int i=0;i<m_devices.Length;i++)
+        {
+            selectedRefClip[i] = qualifiedList[i][selectedIndex];
+        }
     }
 
     // Play animation clips with stop signs
-    private AnimationClip SelectStopAnimClip(string m_device)
+    private void SelectStopAnimClips(string[] m_devices)
     {
-        AnimationClip[] qualifiedList = animList.Where(anim => anim.name.Split('_')[1].StartsWith("stop")&&
-                                        anim.name.Split('_')[0]==m_device).ToArray();
-        AnimationClip selectedClip = qualifiedList[Random.Range(0,qualifiedList.Length)];
-        return selectedClip;
+        AnimationClip[][] qualifiedList = new AnimationClip[m_devices.Length][];
+        for(int i=0;i<m_devices.Length;i++)
+        {
+            qualifiedList[i] = animList.Where(anim => anim.name.Split('_')[1].StartsWith("stop")&&
+                                    anim.name.Split('_')[0]==m_devices[i]).ToArray();
+        }
+        int selectedIndex = Random.Range(0,qualifiedList[0].Length);
+        for(int i=0;i<m_devices.Length;i++)
+        {
+            selectedStopClip[i] = qualifiedList[i][selectedIndex];
+        }
     }
 
     // Initialize selected objects in the given location. Return a list of instantiated Gameobjects

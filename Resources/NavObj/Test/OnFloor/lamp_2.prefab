@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 4575563116892769904}
   m_Layer: 0
   m_Name: lamp_2
-  m_TagString: Untagged
+  m_TagString: Environment
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -94,6 +94,6 @@ MeshCollider:
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 4
-  m_Convex: 0
+  m_Convex: 1
   m_CookingOptions: 30
   m_Mesh: {fileID: 4300018, guid: 0ff2541b8757fa3459d263c903d6cd34, type: 3}

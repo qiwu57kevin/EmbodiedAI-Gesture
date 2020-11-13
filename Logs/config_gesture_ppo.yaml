@@ -26,9 +26,9 @@ behaviors:
         learning_rate: 3e-4
     keep_checkpoints: 5
     checkpoint_interval: 50000
-    max_steps: 1e5
+    max_steps: 2e6
     time_horizon: 128
-    summary_freq: 2000
+    summary_freq: 10000
     threaded: true
 
 # environment_parameters:
