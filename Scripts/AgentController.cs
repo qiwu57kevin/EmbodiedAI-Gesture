@@ -3,6 +3,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEditor;
 using Unity.MLAgents;
 using Unity.MLAgents.Sensors;
@@ -41,12 +42,19 @@ public class AgentController : Agent
     [Header("Log Setting")]
     public bool logCustomMetrics = false;
     public bool drawAgentPath = false;
+    public PathDraw2D pathDraw2D;
     public bool saveAgentPath = false;
     public string saveDirectory = "/Logs/path2D/";
+    public Text successInfo; // bool success information if path needs to be drawn
+    public bool makeHeatMap; // whether to make the heat map
+    public string heatMapSavePath;
+    private StreamWriter heatmapsw;
 
     [Header("Agent vision sensors")]
     public Camera rgbCam;
     public Camera depthCam;
+
+    public GameObject stopMark;
     
 
     // Agent states
@@ -58,9 +66,9 @@ public class AgentController : Agent
     Animator m_Animator;
     float distanceToTarget = 1000f;
     bool contact = false; // if the agent is in contact with an object
-    bool stop = false; // if the agent has issued a stop action
+    [HideInInspector] public bool stop = false; // if the agent has issued a stop action
     bool needHelp = false; // if the agent needs help from the human players (human players can make a stop action to correct the agent)
-    bool isHelped = false; // if the agent is currently being helped by a human player
+    [HideInInspector] public bool isHelped = false; // if the agent is currently being helped by a human player
 
     // Animaton capture
     [Header("Observation Capture")]
@@ -107,7 +115,8 @@ public class AgentController : Agent
     float SMS_TOT = 0f; // Total number of SMS
     int SUCCESS_1STOP=0; int SUCCESS_2STOPS=0; int SUCCESS_3STOPS =0;  int SUCCESS_5STOPS =0; int SUCCESS_10STOPS =0; int SUCCESS_15STOPS =0; int SUCCESS_20STOPS =0; // Number of successful episodes less than the amount of stops
     float SMS_1STOP=0; float SMS_2STOPS=0;float SMS_3STOPS =0f;  float SMS_5STOPS =0f; float SMS_10STOPS =0f; float SMS_15STOPS =0f; float SMS_20STOPS =0f; // SMS less than the amount of stops
-    float DTS_1STOP=0; // Average DTS at the first stop
+    float DTS_1STOP=0; float DTS_TOT = 0;// Average DTS at the first stop and the total DTS
+    float starting_dist = 0f;
     bool EPISODE_DONE = false; // if the episode is completed or not
     bool EPISODE_SUCCESS = false; // if the episode is a success or not
     StatsRecorder statsRecorder;
@@ -145,10 +154,18 @@ public class AgentController : Agent
             Debug.LogError("Agent Controller: CommunicationHub not found");
         }
 
-        if(drawAgentPath)
+        // Create a csv file to record all stop information
+        if(makeHeatMap)
         {
-            PathDraw2D.EnablePathDraw();
+            DateTime now = DateTime.Now;
+            string savePath = Application.dataPath + heatMapSavePath + "hmpts_" + now.ToString("MM-dd-yyyy_HH-mm-ss") + ".csv";
+            heatmapsw = new StreamWriter(savePath);
         }
+
+        // if(drawAgentPath)
+        // {
+        //     PathDraw2D.EnablePathDraw();
+        // }
 
         // Get the animator and third person character component
         m_Animator = GetComponent<Animator>();
@@ -183,25 +200,24 @@ public class AgentController : Agent
         m_rBody.angularVelocity = Vector3.zero;
 
         // Quit application after 1000 episodes for evaluation
-        // if(isInference&&CompletedEpisodes>100)
-        // {
-        //     EditorApplication.isPlaying=false;
-        // }
+        if(isInference&&CompletedEpisodes>2000)
+        {
+            EditorApplication.isPlaying=false;
+        }
 
         if(CompletedEpisodes>0)
         {
             // Save path if required (only in inference)
             if(drawAgentPath)
             {
-                //Reset agent trail renderer
-                PathDraw2D.ResetPathDraw();
-
+                // successInfo.text = EPISODE_SUCCESS? "SUCCESS!":"FAILED!"; 
+                successInfo.text = "";
                 if(saveAgentPath)
                 {
                     DateTime now = DateTime.Now;
                     string savePath = Application.dataPath + saveDirectory;
                     Directory.CreateDirectory(savePath);
-                    PathDraw2D.SavePath2PNG(GameObject.Find("FloorPlanCamera").GetComponent<Camera>(), savePath + now.ToString("MM-dd-yyyy_HH-mm-ss") + $"{catSelected}{locIdxSelected}{typeSelected}_episdoe-{CompletedEpisodes}.png");
+                    PathDraw2D.SavePath2PNG(GameObject.Find("FloorPlanCamera").GetComponent<Camera>(), savePath + $"{targetObj.name}_{targetObj.position.x}-{targetObj.position.y}-{targetObj.position.z}_" + (useHumanIntervention? "Human-Intervened_":"") + now.ToString("MM-dd-yyyy_HH-mm-ss") + ".png");
                 }
             }
 
@@ -225,6 +241,18 @@ public class AgentController : Agent
 
         // Reset the whole environment
         ResetEnv();
+
+        if(CompletedEpisodes==0)
+        {
+            // Take a snapshot of the top view
+            if(makeHeatMap)
+            {
+                DateTime now = DateTime.Now;
+                string savePath = Application.dataPath + saveDirectory;
+                Directory.CreateDirectory(savePath);
+                PathDraw2D.SavePath2PNG(GameObject.Find("FloorPlanCamera").GetComponent<Camera>(), savePath + "TopView_" + targetObj.transform.position.ToString() + "_" + now.ToString("MM-dd-yyyy_HH-mm-ss") + ".png");
+            }
+        }
       
         // Reset Agent in a random position
         if (randomPosition)
@@ -239,10 +267,16 @@ public class AgentController : Agent
             transform.rotation = startingRotation;
         }
 
+        // pathDraw2D.DeActivate();
+
         // record starting position and rotation of the new episode
         startingPosition = transform.position;
         startingFacingNorm = transform.forward;
         startingRotation = transform.rotation;
+        starting_dist = DistanceToTarget(transform.position, targetObj);
+
+        //Reset agent trail renderer
+        // pathDraw2D.ResetPathDraw();
 
         // Reset agent counter
         rotateActions = 0;
@@ -283,15 +317,8 @@ public class AgentController : Agent
         //     sensor.AddObservation(new float[33]);
         // }
 
-        // Add Kinect observations
-        if(useBody) animTaker.TakeKinectSnapshot(sensor); // 81
-        else sensor.AddObservation(new float[81]);
-        // Add Leap observations
-        if(useHand) animTaker.TakeLeapSnapshot(sensor); // 184
-        else sensor.AddObservation(new float[184]);
-
         // Check if the agent needs help and give instructions if needed
-        if((useHand||useBody) && useHumanIntervention)
+        if(useHumanIntervention)
         {
             if(!isHelped&&requireHelpFromHumanPlayer(targetObj, transform.position, transform.forward))
             {
@@ -303,6 +330,21 @@ public class AgentController : Agent
                 isHelped = false;
                 commHub.ResumeReplay();
             }
+        }
+
+        if(!useBody&&!useHand&&useHumanIntervention&&isHelped)
+        {
+            animTaker.TakeKinectSnapshot(sensor);
+            animTaker.TakeLeapSnapshot(sensor);
+        }
+        else
+        {
+            // Add Kinect observations
+            if(useBody) animTaker.TakeKinectSnapshot(sensor); // 81
+            else sensor.AddObservation(new float[81]);
+            // Add Leap observations
+            if(useHand) animTaker.TakeLeapSnapshot(sensor); // 184
+            else sensor.AddObservation(new float[184]);
         }
     }
     
@@ -333,17 +375,17 @@ public class AgentController : Agent
         {
             switch(action)
             {
-                case 1: // Move forward
+                case 0: // Move forward
                     transform.Translate(transform.forward * forwardAmount, Space.World);
                     break;
-                case 2: // Turn right
+                case 1: // Turn right
                     transform.Rotate(0, turnAmount, 0);
                     break;
-                case 3: // Turn left
+                case 2: // Turn left
                     // transform.Rotate(0, -turnAmount * Time.deltaTime, 0);
                     transform.Rotate(0, -turnAmount, 0);
                     break;
-                case 4: // STOP
+                case 3: // STOP
                     if(requireStop)
                     {
                         stop = true;
@@ -402,18 +444,26 @@ public class AgentController : Agent
         // AddReward(-1f/MaxStep);
         AddReward(-0.001f);
 
-        // // Collision penalty
-        // if (contact)
-        // {
-        //     // AddReward(-5f/MaxStep);
-        //     AddReward(-0.005f);
-        // }
+        // Collision penalty
+        if (contact)
+        {
+            // AddReward(-5f/MaxStep);
+            AddReward(-0.005f);
+        }
 
 
         if(requireStop)
         {
             if(stop)
             {
+                if(makeHeatMap)
+                {
+                    heatmapsw.WriteLine($"{transform.position.x},{transform.position.z}");
+                }
+                // pathDraw2D.Activate();
+
+                // CreateStopMark(stopMark, transform.position);
+
                 stopActions++;
                 if(stopActions==1) DTS_1STOP = Mathf.Max(0f, DistanceToTarget(transform.position, targetObj) - navigationThreshold);
                 if(distanceToTarget<navigationThreshold && isVisibleFromCam(rgbCam, targetObj))
@@ -466,7 +516,7 @@ public class AgentController : Agent
 
         objList = commHub.SetupTarget(catSelected, locIdxSelected);
         targetObj = objList[0];
-        if((isTraining||envSetup.replayInInference)&&(useBody)) 
+        if((isTraining||envSetup.replayInInference)&&(useBody||useHand)) 
         {
             commHub.SetupReplay(catSelected, locIdxSelected);
         }
@@ -486,7 +536,7 @@ public class AgentController : Agent
     {
         // Vector3 closestPoint = targetObjBounds.ClosestPoint(pos);
         // return Distance2D(pos, closestPoint)-0.3f; // offset by object radius
-        return Distance2D(pos, target.position);
+        return Distance2D(pos, target.position)-0.3f;
     }
 
     // Randomly choose agent positions based on the room width and length
@@ -507,7 +557,7 @@ public class AgentController : Agent
         }
         if(posChoosing)
         {
-            pos = new Vector3(xPos,0f,zPos);
+            pos = new Vector3(xPos,0.05f,zPos);
             rot = yAngle;
         }
         else
@@ -524,7 +574,7 @@ public class AgentController : Agent
         Vector3 pt1 = positionOnFloor + new Vector3(0,m_collider.radius,0); // The center of the sphere at the start of the capsule
         Vector3 pt2 = positionOnFloor - new Vector3(0,m_collider.radius,0) + new Vector3(0,m_collider.height,0); // The center of the sphere at the end of the capsule
         Collider[] colliders = Physics.OverlapCapsule(pt1, pt2, m_collider.radius).Where(col => col.CompareTag("Environment")||col.CompareTag("Structure")).ToArray();
-        return colliders.Length == 0 && (DistanceToTarget(positionOnFloor, targetObj) >= (navigationThreshold+1f)); // make sure it is at least 1m away from the target object
+        return colliders.Length == 0 && ((DistanceToTarget(positionOnFloor, targetObj) >= (navigationThreshold))); // make sure it is at least 1m away from the target object
     }
     
     // Check if an Renderer is rendered by a specific camera
@@ -553,7 +603,7 @@ public class AgentController : Agent
     public bool requireHelpFromHumanPlayer(Transform target, Vector3 currentPos, Vector3 facingNorm)
     {
         float angle = FacingAngle(target, currentPos, facingNorm);
-        if(angle>135f)
+        if(angle>120f)
         {
             return true;
         }
@@ -637,9 +687,6 @@ public class AgentController : Agent
         // Log SR less than 20 stops
         statsRecorder.Add("STOPS/SR/SR on 20 Stops", (float)SUCCESS_20STOPS/CompletedEpisodes);
         statsRecorder.Add("STOPS/SMS/SMS on 20 Stops", SMS_20STOPS/CompletedEpisodes);
-
-        // Log average DTS at the first stop
-        statsRecorder.Add("STOPS/DTS/Average DTS at the 1st stop", DTS_1STOP);
     }
 
     // Calculate distance to success (Chaplot et al., 2020) (DTS), which is the distance of the agent from the success threshold boundary when the episode ends
@@ -647,7 +694,14 @@ public class AgentController : Agent
     private void LogDTS(Transform target)
     {
         float dts = Mathf.Max(0f, DistanceToTarget(transform.position, target) - navigationThreshold);
+        DTS_TOT += stopActions==0? dts:DTS_1STOP;
         statsRecorder.Add("Metrics/Distance to Success", dts);
+
+        // Log average DTS at the first stop
+        statsRecorder.Add("STOPS/DTS/Average DTS at the 1st stop", DTS_1STOP);
+        statsRecorder.Add("STOPS/DTS/DTS at the 1st stop", DTS_TOT/CompletedEpisodes);
+
+        statsRecorder.Add("Others/Starting DTS", starting_dist);
 
         // if(requireStop)
         // {
@@ -663,13 +717,23 @@ public class AgentController : Agent
         if(collision.collider.tag == "Environment" || collision.collider.tag == "Structure")
         {
             contact = true;
-            AddReward(-0.005f);
+            // AddReward(-0.005f);
         }
     }
 
     void OnCollisionExit(Collision collision)
     {
         contact = false;
+    }
+
+    private void OnApplicationQuit() 
+    {
+        heatmapsw.Close();
+    }
+
+    public void CreateStopMark(GameObject obj, Vector3 pos)
+    {
+        Instantiate(obj, pos, Quaternion.identity);
     }
 
     ///Unity events

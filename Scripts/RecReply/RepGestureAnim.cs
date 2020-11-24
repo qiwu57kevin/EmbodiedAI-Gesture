@@ -50,9 +50,16 @@ public class RepGestureAnim : MonoBehaviour
     public void PlayAnimClipInCtrl(AnimatorController controller, AnimationClip clip)
     {
         ClearAnimCtrl(controller);
-        AnimatorState animState =  controller.layers[0].stateMachine.AddState(clip.name);
-        animState.motion = clip;
-        controller.layers[0].stateMachine.defaultState = animState;
+        if(clip==null)
+        {
+            if(controller.layers[0].stateMachine.defaultState) controller.layers[0].stateMachine.RemoveState(controller.layers[0].stateMachine.defaultState);
+        }
+        else
+        {
+            AnimatorState animState = controller.layers[0].stateMachine.AddState(clip.name);
+            animState.motion = clip;
+            controller.layers[0].stateMachine.defaultState = animState;
+        }
     }
 
     // Clear the animator controller to make sure there is no states

@@ -39,8 +39,8 @@ public class EnvSetup : MonoBehaviour
         if(autoSetTarget)
         {          
             objCatSelected = (NavObj.ObjCategory)Random.Range(0,numObjCats);
-            // objCatSelected = NavObj.ObjCategory.OnFurnitureTop;
+            // objCatSelected = NavObj.ObjCategory.OnWall;
             objLocationIdxSelected = Random.Range(0,10);
-        }               
+        }             
     }
 }

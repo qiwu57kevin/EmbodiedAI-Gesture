@@ -1554,7 +1554,7 @@ GameObject:
   - component: {fileID: 6172744264477196994}
   - component: {fileID: 6164712117004709676}
   - component: {fileID: 5567646305677632454}
-  m_Layer: 8
+  m_Layer: 0
   m_Name: ShelfMesh
   m_TagString: Environment
   m_Icon: {fileID: 0}
@@ -1646,7 +1646,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6184061641387026524}
-  m_Layer: 8
+  m_Layer: 0
   m_Name: A-frameShelf
   m_TagString: Environment
   m_Icon: {fileID: 0}
