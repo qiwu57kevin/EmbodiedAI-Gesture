@@ -10,12 +10,12 @@ You can use your own recordings or our recordings for training and testing. In t
 All agent setups are available from `Agent Controller (Script)` component in `Embodied Agent` GameObject. 
 
 - From *Agent Parameters*, you can choose agent turn and forward amounts in each step, as well as the navigation threshold. You can also enable humanoid movement for the agent (we recommend not to use it during training for performance reasons). 
-- For *Sensor Setting*, you can choose which sensors to use. Note that if you want to train a random model (blind navigation), please remove all `Camera Sensor` components from `Embodied Agent`. 
+- For *Sensor Setting*, you can choose which sensors to use. Note that if you want to train a blind model (navigation without vision), please remove all `Camera Sensor` components from `Embodied Agent`. 
 - In *Log Setting*, you decide whether to log our custom metrics (SR, SMS, DTS), or just use the TensorFlow default metrics. You can also enable path drawing from top down view to track agent movements.
 
 ### Environment
 
-For most cases, there is only one thing to change for the environment: the number of fake targets. To change that, look it up from `Communication Hub` component in `EnvSetup`. You can modify the value of `Num Objects`. This includes the true target itself. In our experiments, we change it from 1 to 3.
+For most cases, there is nothing to change for the environment. In case you want to fix the room and the layout, look it up from `EnvSetup`. You can deselect `Auto Set Target` or `Auto Set Room`.
 
 ## Training from Command Line
 
@@ -41,4 +41,4 @@ TensorFlow has a utility, called **TensorBoard**, that can be used to observe th
 
 ![Tensorboard](Images/tensorboard.png)
 
-Select the name of your training session, and you will be able to see our 3 metrics under the `Metrics` section. For explanation about other statistics, please refer to this [webpage](https://github.com/Unity-Technologies/ml-agents/blob/release_6_docs/docs/Using-Tensorboard.md).
+Select the name of your training session, and you will be able to see 3 metrics under the `Metrics` section. The other metrics regarding the number of stops are under the `Stops` section. For explanation about other statistics, please refer to this [webpage](https://github.com/Unity-Technologies/ml-agents/blob/release_6_docs/docs/Using-Tensorboard.md).

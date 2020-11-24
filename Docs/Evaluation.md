@@ -12,7 +12,7 @@ You can evaluate your trained model from the command to log all metrics:
 
 Note that your environment and agent settings should be the same as your trained model.
 
-The evaluation will be stopped when 1000 episodes are reached. All the metrics will be saved to your `run-id`, and you can check them just like observing [training](Training.md) using TensorBoard.
+The evaluation will be stopped when 1000 episodes are reached by default. All the metrics will be saved to your `run-id`, and you can check them just like observing [training](Training.md) using TensorBoard.
 
 ## Evaluate in Unity
 

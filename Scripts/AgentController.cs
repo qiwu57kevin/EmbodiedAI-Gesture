@@ -200,7 +200,7 @@ public class AgentController : Agent
         m_rBody.angularVelocity = Vector3.zero;
 
         // Quit application after 1000 episodes for evaluation
-        if(isInference&&CompletedEpisodes>2000)
+        if(isInference&&CompletedEpisodes>1000)
         {
             EditorApplication.isPlaying=false;
         }

@@ -1,4 +1,4 @@
-# Gesture-Driven Communicative Learning for Interactive Embodied Navigation - Documentation
+# Communicative Learning via Instructional Gestures for Embodied Navigation Agents - Documentation
 
 This package includeds the learning framework descript in the original paper built with Unity. The documentation contains the following sections:
 
